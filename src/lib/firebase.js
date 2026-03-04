@@ -3,12 +3,12 @@ import { getFirestore } from 'firebase/firestore'
 import { getAuth } from 'firebase/auth'
 
 const firebaseConfig = {
-  apiKey: 'AIzaSyBOWRMMwRva1bbm3KmWRtqXjdav3VewgWE',
-  authDomain: 'gym-track-d264b.firebaseapp.com',
-  projectId: 'gym-track-d264b',
-  storageBucket: 'gym-track-d264b.firebasestorage.app',
-  messagingSenderId: '798440975710',
-  appId: '1:798440975710:web:e9568554be4cf0289d33cf',
+  apiKey:            import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain:        import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId:         import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket:     import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId:             import.meta.env.VITE_FIREBASE_APP_ID,
 }
 
 export const app  = initializeApp(firebaseConfig)
