@@ -5,18 +5,20 @@ import { useApp } from '../context/AppContext'
 
 export function useAuth() {
   const { setCurrentUser, loadUserData } = useApp()
-  const [authState, setAuthState] = useState('loading') // loading | unauthenticated | needsVerify | authenticated
+  const [authState, setAuthState] = useState('loading')
   const [pendingUser, setPendingUser] = useState(null)
+  const [justVerified, setJustVerified] = useState(false)
 
   // Handle Firebase email action on page load (verification link)
   useEffect(() => {
-    const params   = new URLSearchParams(window.location.search)
-    const mode     = params.get('mode')
-    const oobCode  = params.get('oobCode')
+    const params  = new URLSearchParams(window.location.search)
+    const mode    = params.get('mode')
+    const oobCode = params.get('oobCode')
     if (mode === 'verifyEmail' && oobCode) {
       applyActionCode(auth, oobCode)
         .then(() => {
           window.history.replaceState({}, '', window.location.pathname)
+          setJustVerified(true) // Marca que acaba de verificar
           if (auth.currentUser) auth.currentUser.reload()
         })
         .catch(() => {})
@@ -28,7 +30,6 @@ export function useAuth() {
       if (user) {
         const isLegacy = user.email?.endsWith('@gymtrack.app')
 
-        // Needs email verification
         if (!user.emailVerified && !isLegacy) {
           setCurrentUser(user)
           setPendingUser(user)
@@ -37,9 +38,13 @@ export function useAuth() {
         }
 
         setCurrentUser(user)
-        setAuthState('authenticated')
         const { isNew } = await loadUserData(user)
-        if (isNew) setAuthState('completeProfile')
+
+        if (isNew) {
+          setAuthState('completeProfile')
+        } else {
+          setAuthState('authenticated')
+        }
       } else {
         setCurrentUser(null)
         setAuthState('unauthenticated')
@@ -48,5 +53,5 @@ export function useAuth() {
     return () => unsub()
   }, [setCurrentUser, loadUserData])
 
-  return { authState, setAuthState, pendingUser }
+  return { authState, setAuthState, pendingUser, justVerified, setJustVerified }
 }

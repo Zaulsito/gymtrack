@@ -5,6 +5,7 @@ import { useApp } from './context/AppContext'
 import { useAuth } from './hooks/useAuth'
 
 import AuthScreen            from './components/auth/AuthScreen'
+import VerifiedSuccess       from './components/auth/VerifiedSuccess'
 import Header                from './components/layout/Header'
 import DemoBanner            from './components/layout/DemoBanner'
 import Toast                 from './components/layout/Toast'
@@ -19,13 +20,12 @@ import { formatDate } from './lib/utils'
 
 export default function App() {
   const { state, currentUser, isDemoMode, exitDemoMode, showToast, myLogs } = useApp()
-  const { authState, setAuthState, pendingUser } = useAuth()
+  const { authState, setAuthState, pendingUser, justVerified, setJustVerified } = useAuth()
 
   const [screen,  setScreen]  = useState(null) // calendar | profile | partner
   const [modal,   setModal]   = useState(null) // summary | privacy | welcome
   const [welcomeName, setWelcomeName] = useState('')
   const [showAuth, setShowAuth] = useState(false)
-  const [showAuthPanel, setShowAuthPanel] = useState('login')
 
   // Load theme on mount
   useEffect(() => {
@@ -43,7 +43,6 @@ export default function App() {
   function handleDemoRegister() {
     exitDemoMode()
     setShowAuth(true)
-    setShowAuthPanel('register') // panel inicial
   }
 
   function exportExcel() {
@@ -70,7 +69,7 @@ export default function App() {
     XLSX.writeFile(wb, `GymTrack_${new Date().toISOString().split('T')[0]}.xlsx`)
     showToast('✓ Excel exportado', 'ok')
   }
-  console.log('authState:', authState, 'isDemoMode:', isDemoMode, 'state:', !!state)
+
   // ── RENDER ─────────────────────────────────────────────────────────────────
   if (authState === 'loading' && !isDemoMode) {
     return (
@@ -84,10 +83,7 @@ export default function App() {
   if ((authState === 'unauthenticated' || showAuth) && !isDemoMode) {
     return (
       <>
-        <AuthScreen 
-          initialPanel={showAuthPanel}
-          onVerified={() => { setShowAuth(false); setAuthState('loading') }}
-        />
+        <AuthScreen onVerified={() => { setShowAuth(false); setAuthState('loading') }} />
         {modal === 'privacy' && <PrivacyModal onClose={() => setModal(null)} />}
       </>
     )
@@ -95,6 +91,10 @@ export default function App() {
 
   if (authState === 'needsVerify' && !isDemoMode) {
     return <AuthScreen initialPanel="verify" pendingUser={pendingUser} onVerified={() => setAuthState('loading')} />
+  }
+
+  if (authState === 'completeProfile' && justVerified && !isDemoMode) {
+    return <VerifiedSuccess onContinue={() => setJustVerified(false)} />
   }
 
   if (authState === 'completeProfile' && !isDemoMode) {
