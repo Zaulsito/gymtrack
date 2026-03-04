@@ -141,7 +141,6 @@ export function AppProvider({ children }) {
   blue:    '#4d8eff',
   cyan:    '#00e5ff',
   }
-
   const setTheme = useCallback((theme) => {
     document.body.classList.remove('theme-red','theme-pink','theme-blue','theme-cyan')
     if (theme !== 'default') document.body.classList.add(`theme-${theme}`)
@@ -152,6 +151,7 @@ export function AppProvider({ children }) {
     const color = THEME_COLORS[theme] || '#c8ff00'
     document.querySelector('meta[name="theme-color"]')?.setAttribute('content', color)
   }, [])
+
   // ── MY LOGS helper ─────────────────────────────────────────────────────────
   const myLogs = useCallback(() => {
     if (!state || !currentUser) return {}
