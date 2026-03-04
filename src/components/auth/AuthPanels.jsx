@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   signInWithEmailAndPassword, createUserWithEmailAndPassword,
   sendEmailVerification, signOut, reload
@@ -161,15 +161,18 @@ export function RegisterPanel({ onGoLogin, onVerify }) {
 }
 
 // ── VERIFY EMAIL ──────────────────────────────────────────────────────────────
-export function VerifyPanel({ user, onVerified }) {
-  const [error,   setError]   = useState('')
-  const [loading, setLoading] = useState(false)
-  const [resendCount, setResendCount] = useState(1)
-  const [cooldown, setCooldown]       = useState(120) // 2 min in seconds
-  const [isCooling, setIsCooling]     = useState(true)
+const VERIFY_TIMEOUT_MINS = 30
 
-  // Start cooldown timer
-  useState(() => {
+export function VerifyPanel({ user, onVerified, onBack }) {
+  const [error,       setError]       = useState('')
+  const [loading,     setLoading]     = useState(false)
+  const [resendCount, setResendCount] = useState(1)
+  const [cooldown,    setCooldown]    = useState(120)
+  const [isCooling,   setIsCooling]   = useState(true)
+  const [timeLeft,    setTimeLeft]    = useState(VERIFY_TIMEOUT_MINS * 60) // 30 min countdown
+
+  // Cooldown timer (reenvío)
+  useEffect(() => {
     let secs = 120
     const t = setInterval(() => {
       secs--
@@ -177,7 +180,38 @@ export function VerifyPanel({ user, onVerified }) {
       if (secs <= 0) { clearInterval(t); setIsCooling(false) }
     }, 1000)
     return () => clearInterval(t)
-  })
+  }, [])
+
+  // Auto-delete timer (30 min)
+  useEffect(() => {
+    const t = setInterval(async () => {
+      setTimeLeft(prev => {
+        if (prev <= 1) {
+          clearInterval(t)
+          // Borrar cuenta y volver al login
+          auth.currentUser?.delete().catch(() => {})
+          signOut(auth).catch(() => {})
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+    return () => clearInterval(t)
+  }, [])
+
+  // Auto-polling cada 5 seg para detectar verificación
+  useEffect(() => {
+    const t = setInterval(async () => {
+      try {
+        await reload(auth.currentUser)
+        if (auth.currentUser?.emailVerified) {
+          clearInterval(t)
+          onVerified()
+        }
+      } catch {}
+    }, 5000)
+    return () => clearInterval(t)
+  }, [onVerified])
 
   async function checkVerified() {
     setLoading(true); setError('')
@@ -193,7 +227,7 @@ export function VerifyPanel({ user, onVerified }) {
   }
 
   async function resend() {
-    if (resendCount >= 5) { return }
+    if (resendCount >= 5) return
     try {
       await sendEmailVerification(auth.currentUser)
       const newCount = resendCount + 1
@@ -207,15 +241,21 @@ export function VerifyPanel({ user, onVerified }) {
         setCooldown(secs)
         if (secs <= 0) { clearInterval(t); setIsCooling(false) }
       }, 1000)
-    } catch { }
+    } catch {}
   }
 
   async function goBack() {
+    try {
+      await auth.currentUser?.delete()
+    } catch {}
     await signOut(auth)
+    onBack?.()
   }
 
-  const mins = Math.floor(cooldown / 60)
-  const secs = String(cooldown % 60).padStart(2, '0')
+  const mins    = Math.floor(cooldown / 60)
+  const secs    = String(cooldown % 60).padStart(2, '0')
+  const tlMins  = Math.floor(timeLeft / 60)
+  const tlSecs  = String(timeLeft % 60).padStart(2, '0')
 
   return (
     <div className="flex flex-col gap-4 w-full text-center">
@@ -227,10 +267,21 @@ export function VerifyPanel({ user, onVerified }) {
           <strong className="text-[var(--text)]">{user?.email}</strong>
         </p>
       </div>
+
+      {/* Cuenta regresiva de 30 min */}
+      <div className={`text-xs px-3 py-2 rounded-lg border ${timeLeft < 300 ? 'border-[rgba(255,51,102,0.4)] text-[var(--down)] bg-[rgba(255,51,102,0.08)]' : 'border-[var(--border-color)] text-[var(--muted)]'}`}>
+        ⏳ La cuenta se eliminará si no verificas en{' '}
+        <strong className={timeLeft < 300 ? 'text-[var(--down)]' : 'text-[var(--text)]'}>
+          {tlMins}:{tlSecs}
+        </strong>
+      </div>
+
       {error && <p className="text-xs text-[var(--down)]">{error}</p>}
+
       <button className="btn-login" onClick={checkVerified} disabled={loading}>
         {loading ? 'VERIFICANDO...' : 'VERIFICAR Y ENTRAR'}
       </button>
+
       <div>
         <p className="text-xs text-[var(--muted)]">
           ¿No llegó?{' '}
@@ -248,7 +299,10 @@ export function VerifyPanel({ user, onVerified }) {
           </p>
         )}
       </div>
-      <button className="text-xs text-[var(--muted)] underline" onClick={goBack}>← Volver al inicio</button>
+
+      <button className="text-xs text-[var(--muted)] underline hover:text-[var(--text)] transition-colors" onClick={goBack}>
+        ← Volver al inicio
+      </button>
     </div>
   )
 }
