@@ -23,7 +23,7 @@ export default function AuthScreen({ initialPanel = 'login', pendingUser, onVeri
 
         {panel === 'login'    && <LoginPanel    onGoRegister={() => setPanel('register')} />}
         {panel === 'register' && <RegisterPanel onGoLogin={() => setPanel('login')} onVerify={handleVerify} />}
-        {panel === 'verify'   && <VerifyPanel   user={verifyUser} onVerified={onVerified} onBack={() => setPanel('login')} />}
+        {panel === 'verify'   && <VerifyPanel   user={verifyUser} onVerified={onVerified} />}
       </div>
     </div>
   )

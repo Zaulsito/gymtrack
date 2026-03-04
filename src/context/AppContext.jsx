@@ -134,13 +134,6 @@ export function AppProvider({ children }) {
   }, [])
 
   // ── THEME ──────────────────────────────────────────────────────────────────
-  const THEME_COLORS = {
-  default: '#c8ff00',
-  red:     '#ff2d2d',
-  pink:    '#ff85c2',
-  blue:    '#4d8eff',
-  cyan:    '#00e5ff',
-  }
   const setTheme = useCallback((theme) => {
     document.body.classList.remove('theme-red','theme-pink','theme-blue','theme-cyan')
     if (theme !== 'default') document.body.classList.add(`theme-${theme}`)
