@@ -8,8 +8,7 @@ export function useAuth() {
   const [authState, setAuthState] = useState('loading')
   const [pendingUser, setPendingUser] = useState(null)
   const [justVerified, setJustVerified] = useState(false)
-  const loadUserDataRef = useRef(loadUserData)
-  const initialized = useRef(false)
+  const hasLoaded = useRef(false)
 
   // Handle Firebase email action on page load (verification link)
   useEffect(() => {
@@ -28,9 +27,6 @@ export function useAuth() {
   }, [])
 
   useEffect(() => {
-    if (initialized.current) return
-    initialized.current = true
-
     const unsub = onAuthStateChanged(auth, async (user) => {
       if (user) {
         const isLegacy = user.email?.endsWith('@gymtrack.app')
@@ -42,8 +38,12 @@ export function useAuth() {
           return
         }
 
+        // Solo cargar datos una vez
+        if (hasLoaded.current) return
+        hasLoaded.current = true
+
         setCurrentUser(user)
-        const { isNew } = await loadUserDataRef.current(user)
+        const { isNew } = await loadUserData(user)
 
         if (isNew) {
           setAuthState('completeProfile')
@@ -51,12 +51,13 @@ export function useAuth() {
           setAuthState('authenticated')
         }
       } else {
+        hasLoaded.current = false
         setCurrentUser(null)
         setAuthState('unauthenticated')
       }
     })
     return () => unsub()
-  }, [setCurrentUser])
+  }, [])
 
   return { authState, setAuthState, pendingUser, justVerified, setJustVerified }
 }
