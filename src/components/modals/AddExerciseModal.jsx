@@ -4,7 +4,7 @@ import { today, calcCondition, MAX_LOGS } from '../../lib/utils'
 import ManageCatsModal from './ManageCatsModal'
 
 export default function AddExerciseModal({ onClose }) {
-  const { state, updateState, myLogs, currentUser, showToast } = useApp()
+  const { state, updateState, myLogs, currentUser, showToast, logsKey } = useApp()
   const [name,   setName]   = useState('')
   const [num,    setNum]    = useState('')
   const [cat,    setCat]    = useState(state?.currentCat !== 'Todas' ? state.currentCat : (state?.categories?.[0] || ''))
@@ -18,7 +18,7 @@ export default function AddExerciseModal({ onClose }) {
     if (!name.trim()) { showToast('⚠ Ingresa el nombre del ejercicio', 'warn'); return }
     updateState(prev => {
       const newId   = prev.nextId
-      const uid     = currentUser?.uid || Object.keys(prev.logs || {})[0] || 'demo'
+      const uid     = logsKey()
       const next    = { ...prev, nextId: newId + 1 }
       next.exercises = [...(next.exercises || []), { id: newId, num: num || '?', name: name.trim().toUpperCase(), cat }]
       if (!next.logs) next.logs = {}

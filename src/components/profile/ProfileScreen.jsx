@@ -7,7 +7,7 @@ import { resizeImage } from '../../lib/utils'
 import CompleteProfileScreen from './CompleteProfileScreen'
 
 export default function ProfileScreen({ onClose }) {
-  const { state, updateState, currentUser, showToast, saveData } = useApp()
+  const { state, updateState, currentUser, showToast, saveData, isDemoMode } = useApp()
   const [saving,    setSaving]    = useState(false)
   const [error,     setError]     = useState('')
   const [showPwModal, setShowPwModal] = useState(false)
@@ -175,17 +175,21 @@ export default function ProfileScreen({ onClose }) {
             </div>
           ) : (
             <>
-              {!deleteStep
-                ? <button className="btn-danger text-sm py-2 w-full" onClick={() => setDeleteStep(true)}>🗑 Eliminar mi cuenta</button>
-                : <div className="flex flex-col gap-2">
-                    <input className="input-field" type="password" placeholder="Confirma tu contraseña" value={deletePw} onChange={e => setDeletePw(e.target.value)} />
-                    {deleteErr && <p className="text-xs text-[var(--down)]">{deleteErr}</p>}
-                    <div className="flex gap-2">
-                      <button className="btn-outline flex-1 py-2 text-sm" onClick={() => { setDeleteStep(false); setDeletePw(''); setDeleteErr('') }}>Cancelar</button>
-                      <button className="btn-danger flex-1 py-2 text-sm" onClick={requestDelete}>Confirmar</button>
-                    </div>
-                  </div>
-              }
+              {!isDemoMode && (
+                <>
+                  {!deleteStep
+                    ? <button className="btn-danger text-sm py-2 w-full" onClick={() => setDeleteStep(true)}>🗑 Eliminar mi cuenta</button>
+                    : <div className="flex flex-col gap-2">
+                        <input className="input-field" type="password" placeholder="Confirma tu contraseña" value={deletePw} onChange={e => setDeletePw(e.target.value)} />
+                        {deleteErr && <p className="text-xs text-[var(--down)]">{deleteErr}</p>}
+                        <div className="flex gap-2">
+                          <button className="btn-outline flex-1 py-2 text-sm" onClick={() => { setDeleteStep(false); setDeletePw(''); setDeleteErr('') }}>Cancelar</button>
+                          <button className="btn-danger flex-1 py-2 text-sm" onClick={requestDelete}>Confirmar</button>
+                        </div>
+                      </div>
+                  }
+                </>
+              )}
             </>
           )}
         </section>
