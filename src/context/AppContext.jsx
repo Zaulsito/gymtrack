@@ -146,10 +146,6 @@ export function AppProvider({ children }) {
     if (theme !== 'default') document.body.classList.add(`theme-${theme}`)
     localStorage.setItem('gymtrack_theme', theme)
     setThemeState(theme)
-
-    // Cambia el color de la barra superior del navegador/PWA
-    const color = THEME_COLORS[theme] || '#c8ff00'
-    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', color)
   }, [])
 
   // ── MY LOGS helper ─────────────────────────────────────────────────────────
