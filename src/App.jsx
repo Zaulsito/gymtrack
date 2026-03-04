@@ -19,7 +19,7 @@ import * as XLSX from 'xlsx'
 import { formatDate } from './lib/utils'
 
 export default function App() {
-  const { state, currentUser, isDemoMode, exitDemoMode, showToast, myLogs } = useApp()
+  const { state, currentUser, isDemoMode, exitDemoMode, showToast, myLogs, loadUserData, setCurrentUser } = useApp()
   const { authState, setAuthState, pendingUser, justVerified, setJustVerified } = useAuth()
 
   const [screen,  setScreen]  = useState(null) // calendar | profile | partner
@@ -90,7 +90,19 @@ export default function App() {
   }
 
   if (authState === 'needsVerify' && !isDemoMode) {
-    return <AuthScreen initialPanel="verify" pendingUser={pendingUser} onVerified={() => setAuthState('loading')} />
+    return <AuthScreen 
+      initialPanel="verify" 
+      pendingUser={pendingUser} 
+      onVerified={async () => {
+        const user = auth.currentUser
+        if (user) {
+          setCurrentUser(user)
+          const { isNew } = await loadUserData(user)
+          if (isNew) setAuthState('completeProfile')
+          else setAuthState('authenticated')
+        }
+      }} 
+    />
   }
 
   if (authState === 'completeProfile' && justVerified && !isDemoMode) {
