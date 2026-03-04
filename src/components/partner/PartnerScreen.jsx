@@ -3,8 +3,44 @@ import { doc, getDoc, setDoc } from 'firebase/firestore'
 import { db } from '../../lib/firebase'
 import { useApp } from '../../context/AppContext'
 
-export default function PartnerScreen({ onClose }) {
-  const { state, updateState, currentUser, showToast } = useApp()
+export default function PartnerScreen({ onClose, onRegister }) {
+  const { state, updateState, currentUser, showToast, isDemoMode } = useApp()
+
+  // Mensaje especial en modo demo
+  if (isDemoMode) {
+    return (
+      <div className="profile-screen">
+        <div className="bg-[var(--surface)] border-b border-[var(--border-color)] px-6 py-4 flex items-center gap-4 sticky top-0 z-10">
+          <button className="text-accent text-xl" onClick={onClose}>←</button>
+          <div className="font-bebas text-[1.4rem] tracking-widest">Partner</div>
+        </div>
+        <div className="p-6 max-w-[500px] mx-auto flex flex-col items-center gap-6 text-center mt-8">
+          <div className="text-6xl">🤝</div>
+          <h2 className="font-bebas text-2xl text-accent tracking-widest">Compañeros de entreno</h2>
+          <p className="text-[var(--muted)] text-sm leading-relaxed">
+            Con el sistema de partners puedes añadir amigos y compañeros para ver sus resultados y comparar el progreso juntos.
+          </p>
+          <div className="bg-[var(--surface2)] border border-[var(--border-color)] rounded-xl p-4 w-full text-sm text-[var(--muted)]">
+            <div className="text-accent font-semibold mb-2">¿Cómo funciona?</div>
+            <ul className="text-left flex flex-col gap-2">
+              <li>✅ Comparte tu enlace con tu compañero</li>
+              <li>✅ Él acepta la invitación</li>
+              <li>✅ Ven el progreso del otro en tiempo real</li>
+              <li>✅ Comparan pesos, repeticiones y evolución</li>
+            </ul>
+          </div>
+          <div className="flex flex-col gap-3 w-full">
+            <button className="btn-login" onClick={onRegister}>
+              CREAR CUENTA GRATIS
+            </button>
+            <button className="btn-outline py-2.5 text-sm" onClick={onClose}>
+              Seguir en modo demo
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
   const [partners, setPartners] = useState([])
   const [loading,  setLoading]  = useState(true)
   const [expanded, setExpanded] = useState({})

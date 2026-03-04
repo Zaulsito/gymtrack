@@ -14,14 +14,12 @@ export function AppProvider({ children }) {
   const saveTimeout = useRef(null)
   const toastTimer  = useRef(null)
 
-  // ── TOAST ──────────────────────────────────────────────────────────────────
   const showToast = useCallback((msg, type = '') => {
     setToast({ msg, type, visible: true })
     clearTimeout(toastTimer.current)
     toastTimer.current = setTimeout(() => setToast(t => ({ ...t, visible: false })), 3000)
   }, [])
 
-  // ── FIRESTORE ──────────────────────────────────────────────────────────────
   const getDocRef = useCallback((user) => {
     const u = user || currentUser
     return doc(db, 'users', u.uid)
@@ -36,8 +34,6 @@ export function AppProvider({ children }) {
         if (!data.exercises)  data.exercises  = []
         if (!data.logs)       data.logs       = {}
         data.currentCat = 'Todas'
-
-        // Normalize logs key to uid
         if (!data.logs[user.uid]) {
           const oldKey = Object.keys(data.logs)[0]
           if (oldKey) {
@@ -51,12 +47,11 @@ export function AppProvider({ children }) {
         setState(data)
         return { isNew: false, data }
       } else {
-        // Check legacy migration
         const legacySnap = await getDoc(doc(db, 'gymtrack', 'data'))
         const emailName  = user.email.split('@')[0].toUpperCase()
         if (legacySnap.exists() && (emailName === 'YAMIR' || emailName === 'ALMENDRA')) {
-          const legacy    = legacySnap.data()
-          const userLogs  = (legacy.logs && legacy.logs[emailName]) || {}
+          const legacy   = legacySnap.data()
+          const userLogs = (legacy.logs && legacy.logs[emailName]) || {}
           const data = {
             categories: legacy.categories || [...DEFAULT_CATS],
             exercises:  legacy.exercises  || [],
@@ -69,7 +64,6 @@ export function AppProvider({ children }) {
           setState(data)
           return { isNew: false, data }
         } else {
-          // New user
           const data = emptyUserData(user.displayName || user.email, {})
           await setDoc(doc(db, 'users', user.uid), data)
           setState(data)
@@ -89,11 +83,8 @@ export function AppProvider({ children }) {
     const stateToSave = newState || state
     clearTimeout(saveTimeout.current)
     saveTimeout.current = setTimeout(async () => {
-      try {
-        await setDoc(doc(db, 'users', currentUser.uid), stateToSave)
-      } catch (e) {
-        showToast('⚠ Error al guardar', 'warn')
-      }
+      try { await setDoc(doc(db, 'users', currentUser.uid), stateToSave) }
+      catch { showToast('⚠ Error al guardar', 'warn') }
     }, 800)
     return true
   }, [isDemoMode, state, currentUser, showToast])
@@ -105,26 +96,25 @@ export function AppProvider({ children }) {
         clearTimeout(saveTimeout.current)
         saveTimeout.current = setTimeout(async () => {
           try { await setDoc(doc(db, 'users', currentUser.uid), next) }
-          catch (e) { showToast('⚠ Error al guardar', 'warn') }
+          catch { showToast('⚠ Error al guardar', 'warn') }
         }, 800)
       }
       return next
     })
   }, [isDemoMode, currentUser, showToast])
 
-  // ── DEMO MODE ──────────────────────────────────────────────────────────────
   const enterDemoMode = useCallback(() => {
     setIsDemoMode(true)
     setState({
-      categories: ['Todas','Pecho','Piernas','Espalda','Brazos','Abdominal-Caderas','Hombros'],
-      exercises:  DEMO_EXERCISES,
-      logs:       DEMO_LOGS,
-      nextId:     999,
-      currentCat: 'Todas',
+      categories:  ['Pecho','Piernas','Espalda','Brazos','Abdominal-Caderas','Hombros'],
+      exercises:   DEMO_EXERCISES,
+      logs:        { demo: DEMO_LOGS },
+      nextId:      999,
+      currentCat:  'Todas',
       displayName: 'Invitado Demo',
-      username:   'demo',
+      username:    'demo',
       trainedDays: DEMO_TRAINED_DAYS,
-      partners:   [],
+      partners:    [],
     })
   }, [])
 
@@ -133,33 +123,28 @@ export function AppProvider({ children }) {
     setState(null)
   }, [])
 
-  // ── THEME ──────────────────────────────────────────────────────────────────
-  const THEME_COLORS = {
-    default: '#c8ff00',
-    red:     '#ff2d2d',
-    pink:    '#ff85c2',
-    blue:    '#4d8eff',
-    cyan:    '#00e5ff',
-  }
-
-  const setTheme = useCallback((theme) => {
+  const setTheme = useCallback((t) => {
     document.body.classList.remove('theme-red','theme-pink','theme-blue','theme-cyan')
-    if (theme !== 'default') document.body.classList.add(`theme-${theme}`)
-    localStorage.setItem('gymtrack_theme', theme)
-    setThemeState(theme)
-
-    // Cambia el color de la barra superior del celular
-    const color = THEME_COLORS[theme] || '#c8ff00'
-    let metaTheme = document.querySelector('meta[name="theme-color"]')
-    if (metaTheme) metaTheme.setAttribute('content', color)
+    if (t !== 'default') document.body.classList.add(`theme-${t}`)
+    localStorage.setItem('gymtrack_theme', t)
+    setThemeState(t)
+    const colors = { default:'#c8ff00', red:'#ff2d2d', pink:'#ff85c2', blue:'#4d8eff', cyan:'#00e5ff' }
+    const meta = document.querySelector('meta[name="theme-color"]')
+    if (meta) meta.setAttribute('content', colors[t] || '#c8ff00')
   }, [])
 
-  // ── MY LOGS helper ─────────────────────────────────────────────────────────
   const myLogs = useCallback(() => {
-    if (!state || !currentUser) return {}
+    if (!state) return {}
+    if (isDemoMode) return state.logs?.demo || {}
+    if (!currentUser) return {}
     if (!state.logs[currentUser.uid]) state.logs[currentUser.uid] = {}
     return state.logs[currentUser.uid]
-  }, [state, currentUser])
+  }, [state, currentUser, isDemoMode])
+
+  const logsKey = useCallback(() => {
+    if (isDemoMode) return 'demo'
+    return currentUser?.uid || 'demo'
+  }, [isDemoMode, currentUser])
 
   return (
     <AppContext.Provider value={{
@@ -169,7 +154,7 @@ export function AppProvider({ children }) {
       toast, showToast,
       theme, setTheme,
       loadUserData, saveData, getDocRef,
-      myLogs,
+      myLogs, logsKey,
     }}>
       {children}
     </AppContext.Provider>

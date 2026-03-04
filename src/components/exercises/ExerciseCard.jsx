@@ -11,7 +11,7 @@ function CondBadge({ cond }) {
 }
 
 export default function ExerciseCard({ ex, logs = [] }) {
-  const { updateState, myLogs, isDemoMode, showToast } = useApp()
+  const { updateState, myLogs, isDemoMode, showToast, logsKey } = useApp()
   const [expanded, setExpanded]   = useState(false)
   const [peso,   setPeso]   = useState('')
   const [reps,   setReps]   = useState('')
@@ -30,7 +30,7 @@ export default function ExerciseCard({ ex, logs = [] }) {
     const newLog = { peso, reps, series, tam, fecha: fecha || today(), cond }
 
     updateState(prev => {
-      const uid  = Object.keys(prev.logs || {})[0] || 'demo'
+      const uid  = logsKey()
       const next = { ...prev }
       if (!next.logs[uid]) next.logs[uid] = {}
       const arr  = [...(next.logs[uid][String(ex.id)] || []), newLog]
@@ -54,7 +54,7 @@ export default function ExerciseCard({ ex, logs = [] }) {
   function deleteLog(idx) {
     if (!confirm('¿Eliminar este registro?')) return
     updateState(prev => {
-      const uid  = Object.keys(prev.logs || {})[0] || 'demo'
+      const uid  = logsKey()
       const next = { ...prev }
       const arr  = [...(next.logs[uid]?.[String(ex.id)] || [])]
       arr.splice(idx, 1)
@@ -66,7 +66,7 @@ export default function ExerciseCard({ ex, logs = [] }) {
   function deleteExercise() {
     if (!confirm('¿Eliminar este ejercicio?')) return
     updateState(prev => {
-      const uid  = Object.keys(prev.logs || {})[0] || 'demo'
+      const uid  = logsKey()
       const next = { ...prev, exercises: prev.exercises.filter(e => e.id !== ex.id) }
       if (next.logs[uid]) delete next.logs[uid][String(ex.id)]
       return next

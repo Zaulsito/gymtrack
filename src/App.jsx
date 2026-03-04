@@ -18,32 +18,20 @@ import * as XLSX from 'xlsx'
 import { formatDate } from './lib/utils'
 
 export default function App() {
-  const { state, currentUser, exitDemoMode, showToast, myLogs } = useApp()
+  const { state, currentUser, isDemoMode, exitDemoMode, showToast, myLogs } = useApp()
   const { authState, setAuthState, pendingUser } = useAuth()
 
   const [screen,  setScreen]  = useState(null) // calendar | profile | partner
   const [modal,   setModal]   = useState(null) // summary | privacy | welcome
   const [welcomeName, setWelcomeName] = useState('')
   const [showAuth, setShowAuth] = useState(false)
+  const [showAuthPanel, setShowAuthPanel] = useState('login')
 
   // Load theme on mount
-  const THEME_COLORS = {
-    default: '#c8ff00',
-    red:     '#ff2d2d',
-    pink:    '#ff85c2',
-    blue:    '#4d8eff',
-    cyan:    '#00e5ff',
-  }
-
   useEffect(() => {
     const saved = localStorage.getItem('gymtrack_theme') || 'default'
     document.body.classList.remove('theme-red','theme-pink','theme-blue','theme-cyan')
     if (saved !== 'default') document.body.classList.add(`theme-${saved}`)
-
-    // Restaurar theme-color al cargar
-    const color = THEME_COLORS[saved] || '#c8ff00'
-    const metaTheme = document.querySelector('meta[name="theme-color"]')
-    if (metaTheme) metaTheme.setAttribute('content', color)
   }, [])
 
   function handleCompleteProfileDone(firstName) {
@@ -55,6 +43,7 @@ export default function App() {
   function handleDemoRegister() {
     exitDemoMode()
     setShowAuth(true)
+    setShowAuthPanel('register') // panel inicial
   }
 
   function exportExcel() {
@@ -81,9 +70,9 @@ export default function App() {
     XLSX.writeFile(wb, `GymTrack_${new Date().toISOString().split('T')[0]}.xlsx`)
     showToast('✓ Excel exportado', 'ok')
   }
-
+  console.log('authState:', authState, 'isDemoMode:', isDemoMode, 'state:', !!state)
   // ── RENDER ─────────────────────────────────────────────────────────────────
-  if (authState === 'loading') {
+  if (authState === 'loading' && !isDemoMode) {
     return (
       <div className="fixed inset-0 bg-[var(--bg)] flex flex-col items-center justify-center gap-4">
         <div className="font-bebas text-4xl text-accent tracking-widest">GYMTRACK</div>
@@ -92,20 +81,23 @@ export default function App() {
     )
   }
 
-  if (authState === 'unauthenticated' || showAuth) {
+  if ((authState === 'unauthenticated' || showAuth) && !isDemoMode) {
     return (
       <>
-        <AuthScreen onVerified={() => { setShowAuth(false); setAuthState('loading') }} />
+        <AuthScreen 
+          initialPanel={showAuthPanel}
+          onVerified={() => { setShowAuth(false); setAuthState('loading') }}
+        />
         {modal === 'privacy' && <PrivacyModal onClose={() => setModal(null)} />}
       </>
     )
   }
 
-  if (authState === 'needsVerify') {
+  if (authState === 'needsVerify' && !isDemoMode) {
     return <AuthScreen initialPanel="verify" pendingUser={pendingUser} onVerified={() => setAuthState('loading')} />
   }
 
-  if (authState === 'completeProfile') {
+  if (authState === 'completeProfile' && !isDemoMode) {
     return <CompleteProfileScreen onDone={handleCompleteProfileDone} />
   }
 
@@ -125,7 +117,7 @@ export default function App() {
       {/* Screens */}
       {screen === 'calendar' && <CalendarScreen onClose={() => setScreen(null)} />}
       {screen === 'profile'  && <ProfileScreen  onClose={() => setScreen(null)} />}
-      {screen === 'partner'  && <PartnerScreen  onClose={() => setScreen(null)} />}
+      {screen === 'partner'  && <PartnerScreen  onClose={() => setScreen(null)} onRegister={() => { setScreen(null); setShowAuth(true) }} />}
 
       {/* Modals */}
       {modal === 'summary' && <SummaryModal  onClose={() => setModal(null)} />}
