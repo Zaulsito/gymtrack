@@ -134,13 +134,24 @@ export function AppProvider({ children }) {
   }, [])
 
   // ── THEME ──────────────────────────────────────────────────────────────────
+  const THEME_COLORS = {
+  default: '#c8ff00',
+  red:     '#ff2d2d',
+  pink:    '#ff85c2',
+  blue:    '#4d8eff',
+  cyan:    '#00e5ff',
+  }
+
   const setTheme = useCallback((theme) => {
     document.body.classList.remove('theme-red','theme-pink','theme-blue','theme-cyan')
     if (theme !== 'default') document.body.classList.add(`theme-${theme}`)
     localStorage.setItem('gymtrack_theme', theme)
     setThemeState(theme)
-  }, [])
 
+    // Cambia el color de la barra superior del navegador/PWA
+    const color = THEME_COLORS[theme] || '#c8ff00'
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', color)
+  }, [])
   // ── MY LOGS helper ─────────────────────────────────────────────────────────
   const myLogs = useCallback(() => {
     if (!state || !currentUser) return {}
