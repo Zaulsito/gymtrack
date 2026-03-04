@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState } from 'react'
 import { onAuthStateChanged, applyActionCode } from 'firebase/auth'
 import { auth } from '../lib/firebase'
 import { useApp } from '../context/AppContext'
@@ -8,9 +8,8 @@ export function useAuth() {
   const [authState, setAuthState] = useState('loading')
   const [pendingUser, setPendingUser] = useState(null)
   const [justVerified, setJustVerified] = useState(false)
-  const hasLoaded = useRef(false)
 
-  // Handle Firebase email action on page load (verification link)
+  // Detectar link de verificación al cargar la página
   useEffect(() => {
     const params  = new URLSearchParams(window.location.search)
     const mode    = params.get('mode')
@@ -38,26 +37,17 @@ export function useAuth() {
           return
         }
 
-        // Solo cargar datos una vez
-        if (hasLoaded.current) return
-        hasLoaded.current = true
-
         setCurrentUser(user)
+        setAuthState('authenticated')
         const { isNew } = await loadUserData(user)
-
-        if (isNew) {
-          setAuthState('completeProfile')
-        } else {
-          setAuthState('authenticated')
-        }
+        if (isNew) setAuthState('completeProfile')
       } else {
-        hasLoaded.current = false
         setCurrentUser(null)
         setAuthState('unauthenticated')
       }
     })
     return () => unsub()
-  }, [])
+  }, [setCurrentUser, loadUserData])
 
   return { authState, setAuthState, pendingUser, justVerified, setJustVerified }
 }
