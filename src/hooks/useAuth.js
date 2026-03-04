@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { onAuthStateChanged, applyActionCode } from 'firebase/auth'
 import { auth } from '../lib/firebase'
 import { useApp } from '../context/AppContext'
@@ -8,6 +8,8 @@ export function useAuth() {
   const [authState, setAuthState] = useState('loading')
   const [pendingUser, setPendingUser] = useState(null)
   const [justVerified, setJustVerified] = useState(false)
+  const loadUserDataRef = useRef(loadUserData)
+  const initialized = useRef(false)
 
   // Handle Firebase email action on page load (verification link)
   useEffect(() => {
@@ -18,7 +20,7 @@ export function useAuth() {
       applyActionCode(auth, oobCode)
         .then(() => {
           window.history.replaceState({}, '', window.location.pathname)
-          setJustVerified(true) // Marca que acaba de verificar
+          setJustVerified(true)
           if (auth.currentUser) auth.currentUser.reload()
         })
         .catch(() => {})
@@ -26,6 +28,9 @@ export function useAuth() {
   }, [])
 
   useEffect(() => {
+    if (initialized.current) return
+    initialized.current = true
+
     const unsub = onAuthStateChanged(auth, async (user) => {
       if (user) {
         const isLegacy = user.email?.endsWith('@gymtrack.app')
@@ -38,7 +43,7 @@ export function useAuth() {
         }
 
         setCurrentUser(user)
-        const { isNew } = await loadUserData(user)
+        const { isNew } = await loadUserDataRef.current(user)
 
         if (isNew) {
           setAuthState('completeProfile')
@@ -51,7 +56,7 @@ export function useAuth() {
       }
     })
     return () => unsub()
-  }, [setCurrentUser, loadUserData])
+  }, [setCurrentUser])
 
   return { authState, setAuthState, pendingUser, justVerified, setJustVerified }
 }
