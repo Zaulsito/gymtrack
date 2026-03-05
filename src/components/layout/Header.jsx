@@ -4,7 +4,7 @@ import { auth } from '../../lib/firebase'
 import { useApp } from '../../context/AppContext'
 import { THEMES } from '../../lib/utils'
 
-export default function Header({ onOpenProfile, onOpenCalendar, onOpenSummary, onOpenPartner, onExportExcel }) {
+export default function Header({ onOpenProfile, onOpenCalendar, onOpenSummary, onOpenPartner, onExportExcel, onImportExcel }) {
   const { state, currentUser, isDemoMode, exitDemoMode, theme, setTheme, showToast } = useApp()
   const [dropUser,  setDropUser]  = useState(false)
   const [dropTheme, setDropTheme] = useState(false)
@@ -71,6 +71,7 @@ export default function Header({ onOpenProfile, onOpenCalendar, onOpenSummary, o
                   { icon: '📊', label: 'Resumen mensual',  action: onOpenSummary   },
                   { icon: '🤝', label: 'Partner',          action: onOpenPartner   },
                   { icon: '↓',  label: 'Exportar Excel',   action: onExportExcel   },
+                  { icon: '↑',  label: 'Importar Excel',   action: onImportExcel   },
                 ].map(({ icon, label, action }) => (
                   <button key={label} className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-[var(--text)] hover:bg-[var(--surface2)] text-left"
                     onClick={() => { action?.(); setDropUser(false) }}>
