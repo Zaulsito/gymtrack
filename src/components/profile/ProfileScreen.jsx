@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { updateProfile, EmailAuthProvider, reauthenticateWithCredential, updatePassword } from 'firebase/auth'
-import { doc, setDoc, deleteDoc } from 'firebase/firestore'
+import { doc, setDoc, deleteDoc, getDocs, collection, query, where } from 'firebase/firestore'
 import { auth, db } from '../../lib/firebase'
 import { useApp } from '../../context/AppContext'
 import { resizeImage } from '../../lib/utils'
@@ -23,13 +23,34 @@ export default function ProfileScreen({ onClose }) {
   const [level,    setLevel]    = useState(state?.level || '')
   const [days,     setDays]     = useState(state?.days || '')
 
+  // Lógica de cambio de username cada 14 días
+  const lastUsernameChange = state?.usernameChangedAt ? new Date(state.usernameChangedAt) : null
+  const daysSinceChange    = lastUsernameChange ? Math.floor((new Date() - lastUsernameChange) / 86400000) : 999
+  const daysUntilChange    = Math.max(0, 14 - daysSinceChange)
+  const canChangeUsername  = daysUntilChange === 0
+  const usernameChanged    = username !== (state?.username || '')
+
   async function saveProfile() {
     if (!fullName.trim()) { setError('El nombre es obligatorio.'); return }
     if (username && !/^[a-z0-9_]+$/.test(username)) { setError('Usuario: solo letras, números y _'); return }
+
+    // Validar cambio de username
+    if (usernameChanged) {
+      if (!canChangeUsername) { setError(`Puedes cambiar el usuario en ${daysUntilChange} días.`); return }
+      // Verificar que no exista
+      try {
+        const q    = query(collection(db, 'users'), where('username', '==', username.toLowerCase()))
+        const snap = await getDocs(q)
+        const taken = snap.docs.some(d => d.id !== currentUser.uid)
+        if (taken) { setError('Ese nombre de usuario ya está en uso.'); return }
+      } catch { setError('Error al verificar el usuario.'); return }
+    }
+
     setSaving(true)
     try {
       await updateProfile(currentUser, { displayName: fullName })
-      updateState(prev => ({ ...prev, displayName: fullName, username, age, gender, weight, height, goal, level, days }))
+      const extra = usernameChanged ? { usernameChangedAt: new Date().toISOString() } : {}
+      updateState(prev => ({ ...prev, displayName: fullName, username, age, gender, weight, height, goal, level, days, ...extra }))
       showToast('✓ Perfil guardado', 'ok')
       setError('')
     } catch { setError('Error al guardar.') }
@@ -104,8 +125,25 @@ export default function ProfileScreen({ onClose }) {
             <input className="input-field" value={fullName} onChange={e => setFullName(e.target.value)} />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs text-[var(--muted)] uppercase tracking-wider">Nombre de usuario <span className="text-[var(--muted)] normal-case">— no se puede cambiar</span></label>
-            <input className="input-field opacity-50" value={username} disabled />
+            <div className="flex items-center justify-between">
+              <label className="text-xs text-[var(--muted)] uppercase tracking-wider">Nombre de usuario</label>
+              {!canChangeUsername && (
+                <span className="text-xs text-[var(--hold)]">🔒 Cambia en {daysUntilChange} días</span>
+              )}
+              {canChangeUsername && lastUsernameChange && (
+                <span className="text-xs text-[var(--up)]">✓ Disponible para cambiar</span>
+              )}
+            </div>
+            <input
+              className={`input-field ${!canChangeUsername ? 'opacity-50' : ''}`}
+              placeholder="@usuario"
+              value={username}
+              onChange={e => canChangeUsername && setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+              disabled={!canChangeUsername}
+            />
+            {canChangeUsername && (
+              <p className="text-xs text-[var(--muted)]">Solo letras, números y _. Podrás cambiarlo de nuevo en 14 días.</p>
+            )}
           </div>
           <div className="flex flex-col gap-1">
             <label className="text-xs text-[var(--muted)] uppercase tracking-wider">Correo electrónico</label>

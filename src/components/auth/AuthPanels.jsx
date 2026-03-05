@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import {
   signInWithEmailAndPassword, createUserWithEmailAndPassword,
-  sendEmailVerification, signOut, reload
+  sendEmailVerification, sendPasswordResetEmail, signOut, reload
 } from 'firebase/auth'
 import { getDocs, collection, query, where } from 'firebase/firestore'
 import { auth, db } from '../../lib/firebase'
@@ -10,10 +10,14 @@ import { useApp } from '../../context/AppContext'
 // ── LOGIN ────────────────────────────────────────────────────────────────────
 export function LoginPanel({ onGoRegister }) {
   const { enterDemoMode, showToast } = useApp()
-  const [email,    setEmail]    = useState('')
-  const [password, setPassword] = useState('')
-  const [error,    setError]    = useState('')
-  const [loading,  setLoading]  = useState(false)
+  const [email,       setEmail]       = useState('')
+  const [password,    setPassword]    = useState('')
+  const [error,       setError]       = useState('')
+  const [loading,     setLoading]     = useState(false)
+  const [showForgot,  setShowForgot]  = useState(false)
+  const [resetEmail,  setResetEmail]  = useState('')
+  const [resetSent,   setResetSent]   = useState(false)
+  const [resetLoading,setResetLoading]= useState(false)
 
   async function doLogin() {
     if (!email || !password) { setError('Completa todos los campos.'); return }
@@ -44,6 +48,65 @@ export function LoginPanel({ onGoRegister }) {
     setLoading(false)
   }
 
+  async function doReset() {
+    if (!resetEmail.trim()) { showToast('⚠ Ingresa tu correo', 'warn'); return }
+    setResetLoading(true)
+    try {
+      await sendPasswordResetEmail(auth, resetEmail.trim())
+      setResetSent(true)
+    } catch (e) {
+      const msgs = {
+        'auth/user-not-found': 'No existe una cuenta con ese correo.',
+        'auth/invalid-email':  'Correo inválido.',
+      }
+      showToast(msgs[e.code] || 'Error al enviar el correo.', 'warn')
+    }
+    setResetLoading(false)
+  }
+
+  // Panel de recuperación de contraseña
+  if (showForgot) {
+    return (
+      <div className="flex flex-col gap-4 w-full text-center">
+        <div>
+          <div className="text-4xl mb-2">🔑</div>
+          <h2 className="text-accent text-xl font-bebas tracking-wider mb-1">Recuperar contraseña</h2>
+          <p className="text-xs text-[var(--muted)]">Ingresa tu correo y te enviaremos un enlace para restablecer tu contraseña.</p>
+        </div>
+
+        {resetSent ? (
+          <div className="flex flex-col gap-4">
+            <div className="bg-[rgba(57,255,20,0.08)] border border-[rgba(57,255,20,0.3)] rounded-xl p-4">
+              <p className="text-sm text-[var(--up)]">✅ Correo enviado a <strong>{resetEmail}</strong></p>
+              <p className="text-xs text-[var(--muted)] mt-1">Revisa tu bandeja de entrada y sigue el enlace para restablecer tu contraseña.</p>
+            </div>
+            <button className="btn-login" onClick={() => { setShowForgot(false); setResetSent(false); setResetEmail('') }}>
+              VOLVER AL INICIO
+            </button>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-3">
+            <input
+              className="input-field"
+              type="email"
+              placeholder="tu@correo.com"
+              value={resetEmail}
+              onChange={e => setResetEmail(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && doReset()}
+              autoComplete="email"
+            />
+            <button className="btn-login" onClick={doReset} disabled={resetLoading}>
+              {resetLoading ? 'ENVIANDO...' : 'ENVIAR ENLACE'}
+            </button>
+            <button className="text-xs text-[var(--muted)] underline" onClick={() => setShowForgot(false)}>
+              ← Volver al inicio de sesión
+            </button>
+          </div>
+        )}
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-col gap-3 w-full">
       <div className="flex flex-col gap-1">
@@ -69,6 +132,9 @@ export function LoginPanel({ onGoRegister }) {
           onKeyDown={e => e.key === 'Enter' && doLogin()}
           autoComplete="current-password"
         />
+        <button className="text-xs text-[var(--muted)] text-right mt-1 hover:text-accent transition-colors" onClick={() => { setShowForgot(true); setResetEmail(email) }}>
+          ¿Olvidaste tu contraseña?
+        </button>
       </div>
       {error && <p className="text-xs text-[var(--down)] text-center">{error}</p>}
       <button className="btn-login mt-1" onClick={doLogin} disabled={loading}>
