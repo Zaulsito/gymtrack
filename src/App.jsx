@@ -5,6 +5,7 @@ import { useAuth } from './hooks/useAuth'
 
 import AuthScreen            from './components/auth/AuthScreen'
 import VerifiedSuccess       from './components/auth/VerifiedSuccess'
+import ResetPasswordPanel    from './components/auth/ResetPasswordPanel'
 import Header                from './components/layout/Header'
 import DemoBanner            from './components/layout/DemoBanner'
 import Toast                 from './components/layout/Toast'
@@ -28,19 +29,16 @@ export default function App() {
   const [showAuth,      setShowAuth]      = useState(false)
   const [showAuthPanel, setShowAuthPanel] = useState('login')
   const [showImport,    setShowImport]    = useState(false)
+  const [resetCode,     setResetCode]     = useState(() => {
+    const p = new URLSearchParams(window.location.search)
+    return p.get('mode') === 'resetPassword' ? p.get('oobCode') : null
+  })
 
   // Load theme on mount
   useEffect(() => {
-    const THEME_COLORS = {
-      default: '#c8ff00', red: '#ff2d2d', pink: '#ff85c2',
-      blue: '#4d8eff', cyan: '#00e5ff'
-    }
     const saved = localStorage.getItem('gymtrack_theme') || 'default'
     document.body.classList.remove('theme-red','theme-pink','theme-blue','theme-cyan')
     if (saved !== 'default') document.body.classList.add(`theme-${saved}`)
-    // Restaurar theme-color del navegador móvil
-    const meta = document.querySelector('meta[name="theme-color"]')
-    if (meta) meta.setAttribute('content', THEME_COLORS[saved] || '#c8ff00')
   }, [])
 
   function handleCompleteProfileDone(firstName) {
@@ -79,6 +77,17 @@ export default function App() {
     })
     XLSX.writeFile(wb, `GymTrack_${new Date().toISOString().split('T')[0]}.xlsx`)
     showToast('✓ Excel exportado', 'ok')
+  }
+
+  if (resetCode) {
+    return <ResetPasswordPanel
+      oobCode={resetCode}
+      onDone={() => {
+        window.history.replaceState({}, '', window.location.pathname)
+        setResetCode(null)
+        setAuthState('unauthenticated')
+      }}
+    />
   }
 
   // ── RENDER ──────────────────────────────────────────────────────────────────
