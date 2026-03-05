@@ -7,7 +7,7 @@ import { resizeImage } from '../../lib/utils'
 import CompleteProfileScreen from './CompleteProfileScreen'
 
 export default function ProfileScreen({ onClose }) {
-  const { state, updateState, currentUser, showToast, saveData, isDemoMode } = useApp()
+  const { state, updateState, currentUser, showToast, saveData } = useApp()
   const [saving,    setSaving]    = useState(false)
   const [error,     setError]     = useState('')
   const [showPwModal, setShowPwModal] = useState(false)
@@ -104,8 +104,8 @@ export default function ProfileScreen({ onClose }) {
             <input className="input-field" value={fullName} onChange={e => setFullName(e.target.value)} />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs text-[var(--muted)] uppercase tracking-wider">Nombre de usuario</label>
-            <input className="input-field" placeholder="@usuario" value={username} onChange={e => setUsername(e.target.value.toLowerCase())} />
+            <label className="text-xs text-[var(--muted)] uppercase tracking-wider">Nombre de usuario <span className="text-[var(--muted)] normal-case">— no se puede cambiar</span></label>
+            <input className="input-field opacity-50" value={username} disabled />
           </div>
           <div className="flex flex-col gap-1">
             <label className="text-xs text-[var(--muted)] uppercase tracking-wider">Correo electrónico</label>
@@ -175,21 +175,17 @@ export default function ProfileScreen({ onClose }) {
             </div>
           ) : (
             <>
-              {!isDemoMode && (
-                <>
-                  {!deleteStep
-                    ? <button className="btn-danger text-sm py-2 w-full" onClick={() => setDeleteStep(true)}>🗑 Eliminar mi cuenta</button>
-                    : <div className="flex flex-col gap-2">
-                        <input className="input-field" type="password" placeholder="Confirma tu contraseña" value={deletePw} onChange={e => setDeletePw(e.target.value)} />
-                        {deleteErr && <p className="text-xs text-[var(--down)]">{deleteErr}</p>}
-                        <div className="flex gap-2">
-                          <button className="btn-outline flex-1 py-2 text-sm" onClick={() => { setDeleteStep(false); setDeletePw(''); setDeleteErr('') }}>Cancelar</button>
-                          <button className="btn-danger flex-1 py-2 text-sm" onClick={requestDelete}>Confirmar</button>
-                        </div>
-                      </div>
-                  }
-                </>
-              )}
+              {!deleteStep
+                ? <button className="btn-danger text-sm py-2 w-full" onClick={() => setDeleteStep(true)}>🗑 Eliminar mi cuenta</button>
+                : <div className="flex flex-col gap-2">
+                    <input className="input-field" type="password" placeholder="Confirma tu contraseña" value={deletePw} onChange={e => setDeletePw(e.target.value)} />
+                    {deleteErr && <p className="text-xs text-[var(--down)]">{deleteErr}</p>}
+                    <div className="flex gap-2">
+                      <button className="btn-outline flex-1 py-2 text-sm" onClick={() => { setDeleteStep(false); setDeletePw(''); setDeleteErr('') }}>Cancelar</button>
+                      <button className="btn-danger flex-1 py-2 text-sm" onClick={requestDelete}>Confirmar</button>
+                    </div>
+                  </div>
+              }
             </>
           )}
         </section>
