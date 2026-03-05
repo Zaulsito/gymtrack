@@ -31,9 +31,16 @@ export default function App() {
 
   // Load theme on mount
   useEffect(() => {
+    const THEME_COLORS = {
+      default: '#c8ff00', red: '#ff2d2d', pink: '#ff85c2',
+      blue: '#4d8eff', cyan: '#00e5ff'
+    }
     const saved = localStorage.getItem('gymtrack_theme') || 'default'
     document.body.classList.remove('theme-red','theme-pink','theme-blue','theme-cyan')
     if (saved !== 'default') document.body.classList.add(`theme-${saved}`)
+    // Restaurar theme-color del navegador móvil
+    const meta = document.querySelector('meta[name="theme-color"]')
+    if (meta) meta.setAttribute('content', THEME_COLORS[saved] || '#c8ff00')
   }, [])
 
   function handleCompleteProfileDone(firstName) {
