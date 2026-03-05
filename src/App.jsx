@@ -23,7 +23,12 @@ export default function App() {
   const { state, currentUser, isDemoMode, exitDemoMode, showToast, myLogs, loadUserData, setCurrentUser } = useApp()
   const { authState, setAuthState, pendingUser, justVerified, setJustVerified } = useAuth()
 
-  const [screen,        setScreen]        = useState(null)
+  const [screen,        setScreen]        = useState(() => sessionStorage.getItem('gymtrack_screen') || null)
+  
+  function navigateTo(s) {
+    sessionStorage.setItem('gymtrack_screen', s || '')
+    setScreen(s)
+  }
   const [modal,         setModal]         = useState(null)
   const [welcomeName,   setWelcomeName]   = useState('')
   const [showAuth,      setShowAuth]      = useState(false)
@@ -140,10 +145,10 @@ export default function App() {
   return (
     <div className="min-h-screen bg-[var(--bg)]">
       <Header
-        onOpenProfile={() => setScreen('profile')}
-        onOpenCalendar={() => setScreen('calendar')}
+        onOpenProfile={() => navigateTo('profile')}
+        onOpenCalendar={() => navigateTo('calendar')}
         onOpenSummary={() => setModal('summary')}
-        onOpenPartner={() => setScreen('partner')}
+        onOpenPartner={() => navigateTo('partner')}
         onExportExcel={exportExcel}
         onImportExcel={() => setShowImport(true)}
       />
@@ -151,9 +156,9 @@ export default function App() {
       <ExerciseList />
       <Toast />
 
-      {screen === 'calendar' && <CalendarScreen onClose={() => setScreen(null)} />}
-      {screen === 'profile'  && <ProfileScreen  onClose={() => setScreen(null)} />}
-      {screen === 'partner'  && <PartnerScreen  onClose={() => setScreen(null)} onRegister={() => { setScreen(null); setShowAuthPanel('register'); setShowAuth(true) }} />}
+      {screen === 'calendar' && <CalendarScreen onClose={() => navigateTo(null)} />}
+      {screen === 'profile'  && <ProfileScreen  onClose={() => navigateTo(null)} />}
+      {screen === 'partner'  && <PartnerScreen  onClose={() => navigateTo(null)} onRegister={() => { navigateTo(null); setShowAuthPanel('register'); setShowAuth(true) }} />}
 
       {modal === 'summary' && <SummaryModal  onClose={() => setModal(null)} />}
       {modal === 'privacy' && <PrivacyModal  onClose={() => setModal(null)} />}
