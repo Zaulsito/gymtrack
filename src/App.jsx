@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import { signOut } from 'firebase/auth'
 import { auth } from './lib/firebase'
 import { useApp } from './context/AppContext'
 import { useAuth } from './hooks/useAuth'
@@ -15,6 +14,7 @@ import ProfileScreen         from './components/profile/ProfileScreen'
 import CompleteProfileScreen from './components/profile/CompleteProfileScreen'
 import PartnerScreen         from './components/partner/PartnerScreen'
 import { SummaryModal, PrivacyModal, WelcomeModal } from './components/modals/Modals'
+import ImportModal from './components/modals/ImportModal'
 import * as XLSX from 'xlsx'
 import { formatDate } from './lib/utils'
 
@@ -22,10 +22,12 @@ export default function App() {
   const { state, currentUser, isDemoMode, exitDemoMode, showToast, myLogs, loadUserData, setCurrentUser } = useApp()
   const { authState, setAuthState, pendingUser, justVerified, setJustVerified } = useAuth()
 
-  const [screen,  setScreen]  = useState(null) // calendar | profile | partner
-  const [modal,   setModal]   = useState(null) // summary | privacy | welcome
-  const [welcomeName, setWelcomeName] = useState('')
-  const [showAuth, setShowAuth] = useState(false)
+  const [screen,        setScreen]        = useState(null)
+  const [modal,         setModal]         = useState(null)
+  const [welcomeName,   setWelcomeName]   = useState('')
+  const [showAuth,      setShowAuth]      = useState(false)
+  const [showAuthPanel, setShowAuthPanel] = useState('login')
+  const [showImport,    setShowImport]    = useState(false)
 
   // Load theme on mount
   useEffect(() => {
@@ -42,6 +44,7 @@ export default function App() {
 
   function handleDemoRegister() {
     exitDemoMode()
+    setShowAuthPanel('register')
     setShowAuth(true)
   }
 
@@ -52,25 +55,26 @@ export default function App() {
     const cats = [...new Set(state.exercises.map(e => e.cat))]
     cats.forEach(cat => {
       const exs  = state.exercises.filter(e => e.cat === cat)
-      const rows = [['N°','Ejercicio','Peso','Reps','Series','Tamaño','Fecha','Condición']]
+      const rows = [['Ejercicio','Máquina','Descripción','Peso','Reps','Series','Tamaño','Fecha','Condición']]
       exs.forEach(ex => {
         const el = logs[String(ex.id)] || []
-        if (!el.length) { rows.push([ex.num, ex.name, '-','-','-','-','-','SIN DATOS']); return }
+        if (!el.length) { rows.push([ex.name, ex.maquina||'-', ex.descripcion||'-', '-','-','-','-','-','SIN DATOS']); return }
         el.forEach((l, i) => rows.push([
-          i===0?ex.num:'', i===0?ex.name:'',
+          i===0?ex.name:'',
+          i===0?(ex.maquina||'-'):'', i===0?(ex.descripcion||'-'):'',
           l.peso||'-', l.reps||'-', l.series||'-', l.tam||'-',
           l.fecha?formatDate(l.fecha):'-', l.cond||'-'
         ]))
       })
       const ws = XLSX.utils.aoa_to_sheet(rows)
-      ws['!cols'] = [{wch:6},{wch:32},{wch:10},{wch:8},{wch:8},{wch:10},{wch:16},{wch:12}]
+      ws['!cols'] = [{wch:32},{wch:10},{wch:20},{wch:10},{wch:8},{wch:8},{wch:10},{wch:16},{wch:12}]
       XLSX.utils.book_append_sheet(wb, ws, cat.substring(0,31))
     })
     XLSX.writeFile(wb, `GymTrack_${new Date().toISOString().split('T')[0]}.xlsx`)
     showToast('✓ Excel exportado', 'ok')
   }
 
-  // ── RENDER ─────────────────────────────────────────────────────────────────
+  // ── RENDER ──────────────────────────────────────────────────────────────────
   if (authState === 'loading' && !isDemoMode) {
     return (
       <div className="fixed inset-0 bg-[var(--bg)] flex flex-col items-center justify-center gap-4">
@@ -83,21 +87,24 @@ export default function App() {
   if ((authState === 'unauthenticated' || showAuth) && !isDemoMode) {
     return (
       <>
-        <AuthScreen onVerified={() => { setShowAuth(false); setAuthState('loading') }} />
+        <AuthScreen
+          initialPanel={showAuthPanel}
+          onVerified={() => { setShowAuth(false); setAuthState('loading') }}
+        />
         {modal === 'privacy' && <PrivacyModal onClose={() => setModal(null)} />}
       </>
     )
   }
 
   if (authState === 'needsVerify' && !isDemoMode) {
-    return <AuthScreen 
-      initialPanel="verify" 
-      pendingUser={pendingUser} 
+    return <AuthScreen
+      initialPanel="verify"
+      pendingUser={pendingUser}
       onVerified={async () => {
         const user = auth.currentUser
         if (user) {
           setCurrentUser(user)
-          setJustVerified(true)  // ← agregar esto
+          setJustVerified(true)
           const { isNew } = await loadUserData(user)
           if (isNew) setAuthState('completeProfile')
           else setAuthState('authenticated')
@@ -122,20 +129,20 @@ export default function App() {
         onOpenSummary={() => setModal('summary')}
         onOpenPartner={() => setScreen('partner')}
         onExportExcel={exportExcel}
+        onImportExcel={() => setShowImport(true)}
       />
       <DemoBanner onRegister={handleDemoRegister} />
       <ExerciseList />
       <Toast />
 
-      {/* Screens */}
       {screen === 'calendar' && <CalendarScreen onClose={() => setScreen(null)} />}
       {screen === 'profile'  && <ProfileScreen  onClose={() => setScreen(null)} />}
-      {screen === 'partner'  && <PartnerScreen  onClose={() => setScreen(null)} onRegister={() => { setScreen(null); setShowAuth(true) }} />}
+      {screen === 'partner'  && <PartnerScreen  onClose={() => setScreen(null)} onRegister={() => { setScreen(null); setShowAuthPanel('register'); setShowAuth(true) }} />}
 
-      {/* Modals */}
       {modal === 'summary' && <SummaryModal  onClose={() => setModal(null)} />}
       {modal === 'privacy' && <PrivacyModal  onClose={() => setModal(null)} />}
       {modal === 'welcome' && <WelcomeModal  firstName={welcomeName} onClose={() => setModal(null)} />}
+      {showImport          && <ImportModal   onClose={() => setShowImport(false)} />}
     </div>
   )
 }
