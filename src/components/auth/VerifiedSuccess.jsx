@@ -1,4 +1,11 @@
+import { useEffect } from 'react'
+
 export default function VerifiedSuccess({ onContinue }) {
+  useEffect(() => {
+    const t = setTimeout(onContinue, 5000)
+    return () => clearTimeout(t)
+  }, [onContinue])
+  
   return (
     <div className="fixed inset-0 bg-[var(--bg)] z-[500] flex items-center justify-center p-6">
       <div className="w-full max-w-[360px] bg-[var(--surface)] border border-[var(--border-color)] rounded-2xl px-8 py-10 flex flex-col items-center gap-6 text-center">
