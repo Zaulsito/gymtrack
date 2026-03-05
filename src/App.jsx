@@ -97,11 +97,12 @@ export default function App() {
         const user = auth.currentUser
         if (user) {
           setCurrentUser(user)
+          setJustVerified(true)  // ← agregar esto
           const { isNew } = await loadUserData(user)
           if (isNew) setAuthState('completeProfile')
           else setAuthState('authenticated')
         }
-      }} 
+      }}
     />
   }
 
