@@ -23,12 +23,11 @@ export default function App() {
   const { state, currentUser, isDemoMode, exitDemoMode, showToast, myLogs, loadUserData, setCurrentUser } = useApp()
   const { authState, setAuthState, pendingUser, justVerified, setJustVerified } = useAuth()
 
-  const [screen,        setScreen]        = useState(() => sessionStorage.getItem('gymtrack_screen') || null)
-  
-  function navigateTo(s) {
-    sessionStorage.setItem('gymtrack_screen', s || '')
-    setScreen(s)
-  }
+  const [screen, setScreen] = useState(() => {
+    const s = sessionStorage.getItem('gymtrack_screen') || null
+    if (s) document.body.style.overflow = 'hidden'
+    return s
+  })
   const [modal,         setModal]         = useState(null)
   const [welcomeName,   setWelcomeName]   = useState('')
   const [showAuth,      setShowAuth]      = useState(false)
@@ -39,11 +38,20 @@ export default function App() {
     return p.get('mode') === 'resetPassword' ? p.get('oobCode') : null
   })
 
+  function navigateTo(s) {
+    sessionStorage.setItem('gymtrack_screen', s || '')
+    setScreen(s)
+    document.body.style.overflow = s ? 'hidden' : ''
+  }
+
   // Load theme on mount
   useEffect(() => {
+    const COLORS = { default:'#c8ff00', red:'#ff2d2d', pink:'#ff85c2', blue:'#4d8eff', cyan:'#00e5ff' }
     const saved = localStorage.getItem('gymtrack_theme') || 'default'
     document.body.classList.remove('theme-red','theme-pink','theme-blue','theme-cyan')
     if (saved !== 'default') document.body.classList.add(`theme-${saved}`)
+    const meta = document.querySelector('meta[name="theme-color"]')
+    if (meta) meta.setAttribute('content', COLORS[saved] || '#c8ff00')
   }, [])
 
   function handleCompleteProfileDone(firstName) {
