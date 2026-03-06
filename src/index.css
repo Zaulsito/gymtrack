@@ -65,6 +65,20 @@
     --hold: #ffd700;
   }
 
+  body.theme-light {
+    --bg: #f0f2f5;
+    --surface: #ffffff;
+    --surface2: #e8edf2;
+    --border-color: #d1d9e0;
+    --accent: #2563eb;
+    --accent2: #f97316;
+    --text: #1a1a2e;
+    --muted: #6b7280;
+    --up: #16a34a;
+    --down: #dc2626;
+    --hold: #d97706;
+  }
+
   * {
     margin: 0;
     padding: 0;
@@ -129,9 +143,9 @@
 
   .profile-screen {
     @apply fixed bg-[var(--bg)] z-[300] overflow-y-auto;
-    top: 0; left: 0; right: 0;
-    height: 100vh;
-    height: 100dvh;
+    top: 60px; left: 0; right: 0;
+    height: calc(100vh - 60px);
+    height: calc(100dvh - 60px);
   }
 
   .modal-overlay {

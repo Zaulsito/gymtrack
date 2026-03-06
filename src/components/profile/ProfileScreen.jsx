@@ -23,7 +23,6 @@ export default function ProfileScreen({ onClose }) {
   const [level,    setLevel]    = useState(state?.level || '')
   const [days,     setDays]     = useState(state?.days || '')
 
-  // Lógica de cambio de username cada 14 días
   const lastUsernameChange = state?.usernameChangedAt ? new Date(state.usernameChangedAt) : null
   const daysSinceChange    = lastUsernameChange ? Math.floor((new Date() - lastUsernameChange) / 86400000) : 999
   const daysUntilChange    = Math.max(0, 14 - daysSinceChange)
@@ -99,7 +98,7 @@ export default function ProfileScreen({ onClose }) {
 
   return (
     <div className="profile-screen">
-      <div className="bg-[var(--surface)] border-b border-[var(--border-color)] px-6 py-4 flex items-center gap-4 sticky top-0 z-10">
+      <div className="bg-[var(--surface)] border-b border-[var(--border-color)] px-6 py-4 flex items-center gap-4 sticky top-0 z-[290]">
         <button className="text-accent text-xl" onClick={onClose}>←</button>
         <div className="font-bebas text-[1.4rem] tracking-widest">Mi Perfil</div>
       </div>
@@ -169,16 +168,32 @@ export default function ProfileScreen({ onClose }) {
             </div>
             <div className="flex flex-col gap-1">
               <label className="text-xs text-[var(--muted)] uppercase tracking-wider">Peso (kg)</label>
-              <input className="input-field" type="number" placeholder="kg" step="0.1" value={weight} onChange={e => setWeight(e.target.value)} />
+              <input
+                className="input-field"
+                type="number"
+                placeholder="kg"
+                value={weight}
+                onChange={e => {
+                  const val = e.target.value.replace(/[^0-9]/g, '').slice(0, 3)
+                  if (val === '' || parseInt(val) <= 300) setWeight(val)
+                }}
+              />
             </div>
             <div className="flex flex-col gap-1">
               <label className="text-xs text-[var(--muted)] uppercase tracking-wider">Altura (cm)</label>
-              <input className="input-field" type="number" placeholder="cm" value={height} onChange={e => setHeight(e.target.value)} />
+              <input
+                className="input-field"
+                type="number"
+                placeholder="cm"
+                value={height}
+                onChange={e => {
+                  const val = e.target.value.replace(/[^0-9]/g, '').slice(0, 3)
+                  if (val === '' || (parseInt(val) <= 240)) setHeight(val)
+                }}
+              />
             </div>
           </div>
         </section>
-
-        {/* Entrenamiento */}
         <section className="flex flex-col gap-3">
           <div className="section-title">Entrenamiento</div>
           {[

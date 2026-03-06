@@ -13,8 +13,12 @@ import ExerciseList          from './components/exercises/ExerciseList'
 import CalendarScreen        from './components/calendar/CalendarScreen'
 import ProfileScreen         from './components/profile/ProfileScreen'
 import CompleteProfileScreen from './components/profile/CompleteProfileScreen'
+import BodyWeightScreen      from './components/profile/BodyWeightScreen'
+import StatsScreen           from './components/stats/StatsScreen'
+import RoutinesScreen        from './components/routines/RoutinesScreen'
 import PartnerScreen         from './components/partner/PartnerScreen'
-import { SummaryModal, PrivacyModal, WelcomeModal } from './components/modals/Modals'
+import { PrivacyModal, WelcomeModal } from './components/modals/Modals'
+import ShareModal from './components/modals/ShareModal'
 import ImportModal from './components/modals/ImportModal'
 import * as XLSX from 'xlsx'
 import { formatDate } from './lib/utils'
@@ -29,6 +33,7 @@ export default function App() {
   const [showAuth,      setShowAuth]      = useState(false)
   const [showAuthPanel, setShowAuthPanel] = useState('login')
   const [showImport,    setShowImport]    = useState(false)
+  const [showShare,     setShowShare]     = useState(false)
   const [resetCode,     setResetCode]     = useState(() => {
     const p = new URLSearchParams(window.location.search)
     return p.get('mode') === 'resetPassword' ? p.get('oobCode') : null
@@ -43,7 +48,7 @@ export default function App() {
   useEffect(() => {
     const COLORS = { default:'#c8ff00', red:'#ff2d2d', pink:'#ff85c2', blue:'#4d8eff', cyan:'#00e5ff' }
     const saved = localStorage.getItem('gymtrack_theme') || 'default'
-    document.body.classList.remove('theme-red','theme-pink','theme-blue','theme-cyan')
+    document.body.classList.remove('theme-red','theme-pink','theme-blue','theme-cyan','theme-light')
     if (saved !== 'default') document.body.classList.add(`theme-${saved}`)
     const meta = document.querySelector('meta[name="theme-color"]')
     if (meta) meta.setAttribute('content', COLORS[saved] || '#c8ff00')
@@ -150,8 +155,11 @@ export default function App() {
       <Header
         onOpenProfile={() => navigateTo('profile')}
         onOpenCalendar={() => navigateTo('calendar')}
-        onOpenSummary={() => setModal('summary')}
         onOpenPartner={() => navigateTo('partner')}
+        onOpenBody={() => navigateTo('body')}
+        onOpenStats={() => navigateTo('stats')}
+        onOpenRoutines={() => navigateTo('routines')}
+        onShare={() => setShowShare(true)}
         onExportExcel={exportExcel}
         onImportExcel={() => setShowImport(true)}
       />
@@ -159,14 +167,17 @@ export default function App() {
       {!screen && <ExerciseList />}
       <Toast />
 
-      {screen === 'calendar' && <CalendarScreen onClose={() => navigateTo(null)} />}
-      {screen === 'profile'  && <ProfileScreen  onClose={() => navigateTo(null)} />}
-      {screen === 'partner'  && <PartnerScreen  onClose={() => navigateTo(null)} onRegister={() => { navigateTo(null); setShowAuthPanel('register'); setShowAuth(true) }} />}
+      {screen === 'calendar' && <CalendarScreen    onClose={() => navigateTo(null)} />}
+      {screen === 'profile'  && <ProfileScreen      onClose={() => navigateTo(null)} />}
+      {screen === 'partner'  && <PartnerScreen      onClose={() => navigateTo(null)} onRegister={() => { navigateTo(null); setShowAuthPanel('register'); setShowAuth(true) }} />}
+      {screen === 'body'     && <BodyWeightScreen   onClose={() => navigateTo(null)} />}
+      {screen === 'stats'    && <StatsScreen        onClose={() => navigateTo(null)} />}
+      {screen === 'routines' && <RoutinesScreen     onClose={() => navigateTo(null)} />}
 
-      {modal === 'summary' && <SummaryModal  onClose={() => setModal(null)} />}
       {modal === 'privacy' && <PrivacyModal  onClose={() => setModal(null)} />}
       {modal === 'welcome' && <WelcomeModal  firstName={welcomeName} onClose={() => setModal(null)} />}
-      {showImport          && <ImportModal   onClose={() => setShowImport(false)} />}
+      {showImport && <ImportModal onClose={() => setShowImport(false)} />}
+      {showShare  && <ShareModal  onClose={() => setShowShare(false)}  />}
     </div>
   )
 }
