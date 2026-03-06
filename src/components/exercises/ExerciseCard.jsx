@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useApp } from '../../context/AppContext'
 import { today, formatDate, calcCondition, MAX_LOGS } from '../../lib/utils'
 import ExerciseChart from './ExerciseChart'
@@ -102,10 +102,47 @@ export default function ExerciseCard({ ex, logs = [] }) {
   const { updateState, showToast, logsKey } = useApp()
   const [expanded,  setExpanded]  = useState(false)
   const [showEdit,  setShowEdit]  = useState(false)
+  const [timerSecs, setTimerSecs] = useState(null)  // null = off, >0 = running
+  const [timerMax,  setTimerMax]  = useState(90)
+  const timerRef = useRef(null)
+
+  function startTimer(secs) {
+    clearInterval(timerRef.current)
+    setTimerMax(secs)
+    setTimerSecs(secs)
+    timerRef.current = setInterval(() => {
+      setTimerSecs(prev => {
+        if (prev <= 1) {
+          clearInterval(timerRef.current)
+          // Vibrar al terminar
+          if (navigator.vibrate) navigator.vibrate([300, 100, 300])
+          // Sonido al terminar
+          try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)()
+            const osc = ctx.createOscillator()
+            const gain = ctx.createGain()
+            osc.connect(gain); gain.connect(ctx.destination)
+            osc.frequency.value = 880
+            gain.gain.setValueAtTime(0.3, ctx.currentTime)
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.8)
+            osc.start(); osc.stop(ctx.currentTime + 0.8)
+          } catch {}
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+  }
+
+  function stopTimer() {
+    clearInterval(timerRef.current)
+    setTimerSecs(null)
+  }
   const [peso,      setPeso]      = useState('')
   const [reps,      setReps]      = useState('')
   const [series,    setSeries]    = useState('')
   const [tam,       setTam]       = useState('')
+  const [secs,      setSecs]      = useState('')
   const [fecha,     setFecha]     = useState(today())
 
   const lastCond  = logs.length ? logs[logs.length - 1].cond : null
@@ -113,9 +150,9 @@ export default function ExerciseCard({ ex, logs = [] }) {
   const isFull    = logs.length >= MAX_LOGS
 
   function addLog() {
-    if (!peso && !reps) { showToast('⚠ Ingresa al menos el peso o las reps', 'warn'); return }
-    const cond   = calcCondition(logs, peso, reps)
-    const newLog = { peso, reps, series, tam, fecha: fecha || today(), cond }
+    if (!peso && !reps && !secs) { showToast('⚠ Ingresa al menos peso, reps o segundos', 'warn'); return }
+    const cond   = calcCondition(logs, peso, reps, secs)
+    const newLog = { peso, reps, series, tam, secs, fecha: fecha || today(), cond }
     updateState(prev => {
       const uid  = logsKey()
       const next = { ...prev }
@@ -129,7 +166,7 @@ export default function ExerciseCard({ ex, logs = [] }) {
     })
     const msgs = { SUBE: '🔥 ¡Brutal! Superaste tu marca', BAJA: '💪 No te rindas, mañana lo recuperas', MANTIENE: '🎯 Consistencia es la clave' }
     showToast(msgs[cond] || '✓ Guardado', cond === 'SUBE' ? 'ok' : cond === 'BAJA' ? 'warn' : '')
-    setPeso(''); setReps(''); setSeries(''); setTam(''); setFecha(today())
+    setPeso(''); setReps(''); setSeries(''); setTam(''); setSecs(''); setFecha(today())
     setExpanded(true)
   }
 
@@ -187,7 +224,7 @@ export default function ExerciseCard({ ex, logs = [] }) {
                 <table className="w-full text-xs min-w-[500px]" style={{ borderCollapse: 'collapse' }}>
                   <thead>
                     <tr>
-                      {['#','Peso','Reps','Series','Tamaño','Fecha','Condición',''].map(h => (
+                      {['#','Peso','Reps','Segs','Series','Tamaño','Fecha','Condición',''].map(h => (
                         <th key={h} className="text-[var(--muted)] font-medium text-left py-1.5 px-2 border-b border-[var(--border-color)] uppercase text-[0.7rem] tracking-wider">{h}</th>
                       ))}
                     </tr>
@@ -203,6 +240,7 @@ export default function ExerciseCard({ ex, logs = [] }) {
                           </td>
                           <td className="py-2 px-2 font-bold">{l.peso || '-'}</td>
                           <td className="py-2 px-2">{l.reps || '-'}</td>
+                          <td className="py-2 px-2">{l.secs ? `${l.secs}s` : '-'}</td>
                           <td className="py-2 px-2">{l.series || '-'}</td>
                           <td className="py-2 px-2">{l.tam || '-'}</td>
                           <td className="py-2 px-2 text-[var(--muted)] whitespace-nowrap">{formatDate(l.fecha)}</td>
@@ -224,7 +262,7 @@ export default function ExerciseCard({ ex, logs = [] }) {
 
             {isFull && (
               <div className="flex items-center gap-2 mt-3 p-2 rounded-lg text-xs text-[var(--hold)] border border-[rgba(255,215,0,0.2)] bg-[rgba(255,215,0,0.08)]">
-                ⚠ Límite de 3 registros — el más antiguo se eliminará al guardar uno nuevo.
+                ⚠ Límite de {MAX_LOGS} registros — el más antiguo se eliminará al guardar uno nuevo.
               </div>
             )}
 
@@ -232,6 +270,7 @@ export default function ExerciseCard({ ex, logs = [] }) {
               style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(90px, 1fr))' }}>
               <input className="input-field" placeholder="Peso (kg)" value={peso}   onChange={e => setPeso(e.target.value)} />
               <input className="input-field" placeholder="Reps"       value={reps}   onChange={e => setReps(e.target.value)} />
+              <input className="input-field" placeholder="Segundos"   value={secs}   onChange={e => setSecs(e.target.value)} />
               <input className="input-field" placeholder="Series"     value={series} onChange={e => setSeries(e.target.value)} />
               <input className="input-field" placeholder="Tamaño"     value={tam}    onChange={e => setTam(e.target.value)} />
               <input className="input-field" type="date"              value={fecha}  onChange={e => setFecha(e.target.value)} />
@@ -241,6 +280,40 @@ export default function ExerciseCard({ ex, logs = [] }) {
             <div className="flex gap-2 mt-3">
               <button className="btn-outline text-xs py-1 px-3" onClick={() => setShowEdit(true)}>✏ Editar ejercicio</button>
               <button className="btn-danger  text-xs py-1 px-3" onClick={deleteExercise}>🗑 Eliminar ejercicio</button>
+            </div>
+
+            {/* Timer de descanso */}
+            <div className="mt-3 pt-3 border-t border-dashed border-[var(--border-color)]">
+              {timerSecs === null ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-[var(--muted)]">⏱ Descanso:</span>
+                  {[{s:60,l:'1m'},{s:90,l:'1:30'},{s:120,l:'2m'},{s:180,l:'3m'}].map(({s,l}) => (
+                    <button key={s} className="btn-outline text-xs py-1 px-3" onClick={() => startTimer(s)}>
+                      {l}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex items-center gap-3">
+                  {/* Barra de progreso */}
+                  <div className="flex-1 bg-[var(--surface)] rounded-full h-2 overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all duration-1000"
+                      style={{
+                        width: `${(timerSecs / timerMax) * 100}%`,
+                        background: timerSecs <= 10 ? 'var(--down)' : timerSecs <= 30 ? 'var(--hold)' : 'var(--accent)'
+                      }}
+                    />
+                  </div>
+                  <span
+                    className="font-bebas text-xl w-16 text-right"
+                    style={{ color: timerSecs <= 10 ? 'var(--down)' : timerSecs <= 30 ? 'var(--hold)' : 'var(--accent)' }}
+                  >
+                    {timerSecs === 0 ? '¡Ya!' : timerSecs >= 60 ? `${Math.floor(timerSecs/60)}:${String(timerSecs%60).padStart(2,'0')}` : `${timerSecs}s`}
+                  </span>
+                  <button className="btn-danger text-xs py-1 px-2" onClick={stopTimer}>✕</button>
+                </div>
+              )}
             </div>
           </div>
         )}

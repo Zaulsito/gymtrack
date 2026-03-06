@@ -128,7 +128,10 @@
   }
 
   .profile-screen {
-    @apply fixed inset-0 bg-[var(--bg)] z-[300] overflow-y-auto pb-8;
+    @apply fixed bg-[var(--bg)] z-[300] overflow-y-auto;
+    top: 0; left: 0; right: 0;
+    height: 100vh;
+    height: 100dvh;
   }
 
   .modal-overlay {

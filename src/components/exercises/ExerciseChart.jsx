@@ -1,11 +1,10 @@
 import { formatDate } from '../../lib/utils'
 
-export default function ExerciseChart({ logs }) {
-  const points = logs.filter(l => parseFloat(l.peso) > 0)
+function Chart({ points, valueKey, label, unit }) {
   if (points.length < 2) return null
 
   const W = 300, H = 80, pad = 20, padL = 32, padR = 10
-  const vals = points.map(l => parseFloat(l.peso))
+  const vals = points.map(l => parseFloat(l[valueKey]))
   const minV = Math.min(...vals)
   const maxV = Math.max(...vals)
   const range = maxV - minV || 1
@@ -29,22 +28,34 @@ export default function ExerciseChart({ logs }) {
   return (
     <div className="mt-3 bg-[var(--surface2)] rounded-xl p-3 border border-[var(--border-color)]">
       <div className="text-[0.72rem] text-[var(--muted)] uppercase tracking-wider mb-2">
-        📈 Evolución del peso <span style={{ color: trendColor }}>{trend}</span>
+        📈 {label} <span style={{ color: trendColor }}>{trend}</span>
       </div>
       <svg viewBox={`0 0 ${W} ${H}`} height={H} className="w-full overflow-visible">
         <path d={area} fill="var(--accent)" fillOpacity="0.12" />
         <path d={line} fill="none" stroke="var(--accent)" strokeWidth="2.5" strokeLinecap="round" />
         {[minV, maxV].map((v, i) => (
-          <text key={i} className="chart-label" x={padL - 4} y={i === 0 ? H - pad * 1.5 + 4 : pad + 4} textAnchor="end">{v}</text>
+          <text key={i} className="chart-label" x={padL - 4} y={i === 0 ? H - pad * 1.5 + 4 : pad + 4} textAnchor="end">{v}{unit}</text>
         ))}
         {points.map((l, i) => (
           <g key={i}>
             <circle className="chart-dot" cx={xs[i]} cy={ys[i]} r={4} />
-            <text className="chart-value" x={xs[i]} y={ys[i] - 8}>{vals[i]}</text>
+            <text className="chart-value" x={xs[i]} y={ys[i] - 8}>{vals[i]}{unit}</text>
             <text className="chart-label" x={xs[i]} y={H - 2}>{formatDate(l.fecha).split(' ').slice(0,2).join(' ')}</text>
           </g>
         ))}
       </svg>
     </div>
+  )
+}
+
+export default function ExerciseChart({ logs }) {
+  const pesoPoints = logs.filter(l => parseFloat(l.peso) > 0)
+  const secsPoints = logs.filter(l => parseFloat(l.secs) > 0)
+
+  return (
+    <>
+      <Chart points={pesoPoints} valueKey="peso" label="Evolución del peso"     unit="kg" />
+      <Chart points={secsPoints} valueKey="secs" label="Evolución de segundos"  unit="s"  />
+    </>
   )
 }

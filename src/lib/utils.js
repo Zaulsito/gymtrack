@@ -1,4 +1,4 @@
-export const MAX_LOGS = 3
+export const MAX_LOGS = 10
 
 export const DEFAULT_CATS = [
   'Piernas','Brazos','Cuerpo','Abdominal','Caderas','Espalda','Pecho','Mancuernas','Otros'
@@ -68,11 +68,11 @@ export function formatDate(d) {
   return new Date(d + 'T12:00:00').toLocaleDateString('es-ES', { day:'numeric', month:'short', year:'numeric' })
 }
 
-export function calcCondition(prevLogs, newPeso, newReps) {
+export function calcCondition(prevLogs, newPeso, newReps, newSecs) {
   if (!prevLogs.length) return 'MANTIENE'
   const last = prevLogs[prevLogs.length - 1]
-  const prev = (parseFloat(last.peso) || 0) + (parseFloat(last.reps) || 0) * 0.5
-  const cur  = (parseFloat(newPeso)  || 0) + (parseFloat(newReps)  || 0) * 0.5
+  const prev = (parseFloat(last.peso) || 0) + (parseFloat(last.reps) || 0) * 0.5 + (parseFloat(last.secs) || 0) * 0.3
+  const cur  = (parseFloat(newPeso)  || 0) + (parseFloat(newReps)  || 0) * 0.5 + (parseFloat(newSecs)  || 0) * 0.3
   if (cur > prev + 0.1) return 'SUBE'
   if (cur < prev - 0.1) return 'BAJA'
   return 'MANTIENE'
