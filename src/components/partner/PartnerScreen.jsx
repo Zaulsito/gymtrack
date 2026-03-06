@@ -10,7 +10,7 @@ export default function PartnerScreen({ onClose, onRegister }) {
   if (isDemoMode) {
     return (
       <div className="profile-screen">
-        <div className="bg-[var(--surface)] border-b border-[var(--border-color)] px-6 py-4 flex items-center gap-4 sticky top-0 z-10">
+        <div className="bg-[var(--surface)] border-b border-[var(--border-color)] px-6 py-4 flex items-center gap-4 sticky top-0 z-[290]">
           <button className="text-accent text-xl" onClick={onClose}>←</button>
           <div className="font-bebas text-[1.4rem] tracking-widest">Partner</div>
         </div>
@@ -199,12 +199,12 @@ export default function PartnerScreen({ onClose, onRegister }) {
 
   return (
     <div className="profile-screen">
-      <div className="bg-[var(--surface)] border-b border-[var(--border-color)] px-6 py-4 flex items-center gap-4 sticky top-0 z-10">
+      <div className="bg-[var(--surface)] border-b border-[var(--border-color)] px-6 py-4 flex items-center gap-4 sticky top-0 z-[290]">
         <button className="text-accent text-xl" onClick={onClose}>←</button>
         <div className="font-bebas text-[1.4rem] tracking-widest">Partner</div>
       </div>
 
-      <div className="p-6 pb-6 max-w-[500px] mx-auto flex flex-col gap-4">
+      <div className="p-6 pb-10 max-w-[500px] mx-auto flex flex-col gap-4 min-h-0">
 
         {/* Notificaciones */}
         {notifications.length > 0 && (

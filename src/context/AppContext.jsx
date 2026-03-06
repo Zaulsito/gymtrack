@@ -124,11 +124,11 @@ export function AppProvider({ children }) {
   }, [])
 
   const setTheme = useCallback((t) => {
-    document.body.classList.remove('theme-red','theme-pink','theme-blue','theme-cyan')
+    document.body.classList.remove('theme-red','theme-pink','theme-blue','theme-cyan','theme-light')
     if (t !== 'default') document.body.classList.add(`theme-${t}`)
     localStorage.setItem('gymtrack_theme', t)
     setThemeState(t)
-    const colors = { default:'#c8ff00', red:'#ff2d2d', pink:'#ff85c2', blue:'#4d8eff', cyan:'#00e5ff' }
+    const colors = { default:'#c8ff00', red:'#ff2d2d', pink:'#ff85c2', blue:'#4d8eff', cyan:'#00e5ff', light:'#2563eb' }
     const meta = document.querySelector('meta[name="theme-color"]')
     if (meta) meta.setAttribute('content', colors[t] || '#c8ff00')
   }, [])

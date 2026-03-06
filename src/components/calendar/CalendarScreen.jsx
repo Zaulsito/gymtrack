@@ -61,7 +61,7 @@ export default function CalendarScreen({ onClose }) {
 
   return (
     <div className="profile-screen">
-      <div className="bg-[var(--surface)] border-b border-[var(--border-color)] px-6 py-4 flex items-center gap-4 sticky top-0 z-10">
+      <div className="bg-[var(--surface)] border-b border-[var(--border-color)] px-6 py-4 flex items-center gap-4 sticky top-0 z-[290]">
         <button className="text-accent text-xl" onClick={onClose}>←</button>
         <div className="font-bebas text-[1.4rem] tracking-widest">Calendario</div>
         <button className="btn-accent ml-auto text-sm py-1.5 px-4" onClick={markToday}>✓ Entrené hoy</button>

@@ -4,7 +4,7 @@ import { auth } from '../../lib/firebase'
 import { useApp } from '../../context/AppContext'
 import { THEMES } from '../../lib/utils'
 
-export default function Header({ onOpenProfile, onOpenCalendar, onOpenSummary, onOpenPartner, onExportExcel, onImportExcel }) {
+export default function Header({ onOpenProfile, onOpenCalendar, onOpenPartner, onOpenBody, onOpenStats, onOpenRoutines, onShare, onExportExcel, onImportExcel }) {
   const { state, currentUser, isDemoMode, exitDemoMode, theme, setTheme, showToast } = useApp()
   const [dropUser,  setDropUser]  = useState(false)
   const [dropTheme, setDropTheme] = useState(false)
@@ -18,7 +18,7 @@ export default function Header({ onOpenProfile, onOpenCalendar, onOpenSummary, o
   const name     = state?.displayName || currentUser?.email?.split('@')[0] || 'Usuario'
 
   return (
-    <header className="bg-[var(--surface)] border-b border-[var(--border-color)] px-6 flex items-center justify-between h-[60px] sticky top-0 z-[100]">
+    <header className="bg-[var(--surface)] border-b border-[var(--border-color)] px-6 flex items-center justify-between h-[60px] sticky top-0 z-[350]">
       <div className="font-bebas text-[1.8rem] tracking-widest text-accent">
         GYM<span className="text-[var(--text)]">TRACK</span>
       </div>
@@ -68,8 +68,11 @@ export default function Header({ onOpenProfile, onOpenCalendar, onOpenSummary, o
                 {[
                   { icon: '👤', label: 'Mi Perfil',        action: onOpenProfile   },
                   { icon: '📅', label: 'Calendario',       action: onOpenCalendar  },
-                  { icon: '📊', label: 'Resumen mensual',  action: onOpenSummary   },
+                  { icon: '📋', label: 'Rutinas',           action: onOpenRoutines  },
+                  { icon: '📊', label: 'Estadísticas',     action: onOpenStats     },
+                  { icon: '📤', label: 'Compartir progreso',action: onShare         },
                   { icon: '🤝', label: 'Partner',          action: onOpenPartner   },
+                  { icon: '⚖️', label: 'Peso corporal',    action: onOpenBody      },
                   { icon: '↓',  label: 'Exportar Excel',   action: onExportExcel   },
                   { icon: '↑',  label: 'Importar Excel',   action: onImportExcel   },
                 ].map(({ icon, label, action }) => (

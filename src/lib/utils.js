@@ -5,11 +5,12 @@ export const DEFAULT_CATS = [
 ]
 
 export const THEMES = {
-  default: { label: 'Verde',   color: '#c8ff00' },
-  red:     { label: 'Rojo',    color: '#ff2d2d' },
-  pink:    { label: 'Rosa',    color: '#ff85c2' },
-  blue:    { label: 'Azul',    color: '#4d8eff' },
-  cyan:    { label: 'Celeste', color: '#00e5ff' },
+  default: { label: 'Verde / Oscuro',   color: '#c8ff00' },
+  red:     { label: 'Rojo / Oscuro',    color: '#ff2d2d' },
+  pink:    { label: 'Rosa / Oscuro',    color: '#ff85c2' },
+  blue:    { label: 'Azul / Oscuro',    color: '#4d8eff' },
+  cyan:    { label: 'Celeste / Oscuro', color: '#00e5ff' },
+  light:   { label: 'Azul / Claro',    color: '#2563eb' },
 }
 
 export const DEMO_EXERCISES = [
