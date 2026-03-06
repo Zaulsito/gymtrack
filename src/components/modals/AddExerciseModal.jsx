@@ -9,6 +9,7 @@ export default function AddExerciseModal({ onClose }) {
   const [cat,         setCat]         = useState(state?.currentCat !== 'Todas' ? state.currentCat : (state?.categories?.[0] || ''))
   const [peso,        setPeso]        = useState('')
   const [reps,        setReps]        = useState('')
+  const [secs,        setSecs]        = useState('')
   const [series,      setSeries]      = useState('')
   const [tam,         setTam]         = useState('')
   const [extraType,   setExtraType]   = useState('maquina') // 'maquina' | 'descripcion'
@@ -38,9 +39,9 @@ export default function AddExerciseModal({ onClose }) {
       }]
       if (!next.logs) next.logs = {}
       if (!next.logs[uid]) next.logs[uid] = {}
-      if (peso || reps) {
-        const cond = calcCondition([], peso, reps)
-        next.logs[uid][String(newId)] = [{ peso, reps, series, tam, fecha: today(), cond }]
+      if (peso || reps || secs) {
+        const cond = calcCondition([], peso, reps, secs)
+        next.logs[uid][String(newId)] = [{ peso, reps, secs, series, tam, fecha: today(), cond }]
       }
       next.currentCat = cat
       return next
@@ -142,6 +143,7 @@ export default function AddExerciseModal({ onClose }) {
               <div className="grid grid-cols-2 gap-2">
                 <input className="input-field" placeholder="Peso (kg)"    value={peso}   onChange={e => setPeso(e.target.value)} />
                 <input className="input-field" placeholder="Reps"          value={reps}   onChange={e => setReps(e.target.value)} />
+                <input className="input-field" placeholder="Segundos"      value={secs}   onChange={e => setSecs(e.target.value)} />
                 <input className="input-field" placeholder="Series"        value={series} onChange={e => setSeries(e.target.value)} />
                 <input className="input-field" placeholder="Tamaño S/M/L"  value={tam}    onChange={e => setTam(e.target.value)} />
               </div>

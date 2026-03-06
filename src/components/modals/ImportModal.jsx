@@ -14,13 +14,13 @@ export default function ImportModal({ onClose }) {
   function downloadExample() {
     const wb   = XLSX.utils.book_new()
     const rows = [
-      ['Ejercicio', 'Máquina', 'Descripción', 'Peso', 'Reps', 'Series', 'Tamaño', 'Fecha'],
-      ['PRESS DE BANCA',  '5',  '',              '80',  '10', '3', 'M', '2024-01-15'],
-      ['SENTADILLA',      '',   'Con barra libre','100', '8',  '4', 'L', '2024-01-15'],
-      ['CURL DE BICEPS',  '12', '',              '20',  '12', '3', 'S', '2024-01-15'],
+      ['Ejercicio', 'Máquina', 'Descripción', 'Peso', 'Reps', 'Segundos', 'Series', 'Tamaño', 'Fecha'],
+      ['PRESS DE BANCA',  '5',  '',              '80',  '10', '', '3', 'M', '2024-01-15'],
+      ['SENTADILLA',      '',   'Con barra libre','100', '8',  '', '4', 'L', '2024-01-15'],
+      ['PLANCHA',         '',   '',              '',    '',   '60', '3', '',  '2024-01-15'],
     ]
     const ws = XLSX.utils.aoa_to_sheet(rows)
-    ws['!cols'] = [{wch:28},{wch:10},{wch:20},{wch:8},{wch:6},{wch:8},{wch:8},{wch:14}]
+    ws['!cols'] = [{wch:28},{wch:10},{wch:20},{wch:8},{wch:6},{wch:10},{wch:8},{wch:8},{wch:14}]
     XLSX.utils.book_append_sheet(wb, ws, 'Ejemplo')
     XLSX.writeFile(wb, 'GymTrack_Ejemplo.xlsx')
   }
@@ -47,6 +47,7 @@ export default function ImportModal({ onClose }) {
           const iDesc   = header.findIndex(h => h.includes('descripción')|| h.includes('descripcion'))
           const iPeso   = header.findIndex(h => h.includes('peso'))
           const iReps   = header.findIndex(h => h.includes('reps'))
+          const iSecs   = header.findIndex(h => h.includes('segundos')  || h.includes('segs') || h.includes('secs'))
           const iSeries = header.findIndex(h => h.includes('series'))
           const iTam    = header.findIndex(h => h.includes('tamaño')    || h.includes('tamano'))
           const iFecha  = header.findIndex(h => h.includes('fecha'))
@@ -64,6 +65,7 @@ export default function ImportModal({ onClose }) {
               descripcion: iDesc  >= 0 ? String(row[iDesc]  || '').trim() : '',
               peso:        iPeso  >= 0 ? String(row[iPeso]  || '') : '',
               reps:        iReps  >= 0 ? String(row[iReps]  || '') : '',
+              secs:        iSecs  >= 0 ? String(row[iSecs]  || '') : '',
               series:      iSeries>= 0 ? String(row[iSeries]|| '') : '',
               tam:         iTam   >= 0 ? String(row[iTam]   || '') : '',
               fecha:       iFecha >= 0 ? String(row[iFecha] || today()) : today(),
@@ -94,8 +96,8 @@ export default function ImportModal({ onClose }) {
       preview.forEach(row => {
         const key = row.name
         if (!grouped[key]) grouped[key] = { ...row, logs: [] }
-        if (row.peso || row.reps) {
-          grouped[key].logs.push({ peso: row.peso, reps: row.reps, series: row.series, tam: row.tam, fecha: row.fecha })
+        if (row.peso || row.reps || row.secs) {
+          grouped[key].logs.push({ peso: row.peso, reps: row.reps, secs: row.secs, series: row.series, tam: row.tam, fecha: row.fecha })
         }
       })
 
@@ -116,7 +118,7 @@ export default function ImportModal({ onClose }) {
         if (ex.logs.length) {
           const logsWithCond = ex.logs.map((l, i) => ({
             ...l,
-            cond: calcCondition(ex.logs.slice(0, i), l.peso, l.reps)
+            cond: calcCondition(ex.logs.slice(0, i), l.peso, l.reps, l.secs)
           }))
           next.logs[uid][String(newId)] = logsWithCond.slice(-MAX_LOGS)
         }
@@ -141,7 +143,7 @@ export default function ImportModal({ onClose }) {
               <table className="text-xs w-full min-w-[360px]">
                 <thead>
                   <tr className="border-b border-[var(--border-color)]">
-                    {['Ejercicio','Máquina','Descripción','Peso','Reps','Series','Tamaño','Fecha'].map(h => (
+                    {['Ejercicio','Máquina','Descripción','Peso','Reps','Segundos','Series','Tamaño','Fecha'].map(h => (
                       <th key={h} className="text-left py-1 px-2 text-[var(--muted)] uppercase tracking-wider font-medium">{h}</th>
                     ))}
                   </tr>
@@ -153,18 +155,20 @@ export default function ImportModal({ onClose }) {
                     <td className="py-1 px-2 text-[var(--muted)]">-</td>
                     <td className="py-1 px-2">80</td>
                     <td className="py-1 px-2">10</td>
+                    <td className="py-1 px-2 text-[var(--muted)]">-</td>
                     <td className="py-1 px-2">3</td>
                     <td className="py-1 px-2">M</td>
                     <td className="py-1 px-2">2024-01-15</td>
                   </tr>
                   <tr className="opacity-60">
-                    <td className="py-1 px-2">SENTADILLA</td>
+                    <td className="py-1 px-2">PLANCHA</td>
                     <td className="py-1 px-2 text-[var(--muted)]">-</td>
-                    <td className="py-1 px-2 text-accent">Con barra</td>
-                    <td className="py-1 px-2">100</td>
-                    <td className="py-1 px-2">8</td>
-                    <td className="py-1 px-2">4</td>
-                    <td className="py-1 px-2">L</td>
+                    <td className="py-1 px-2 text-[var(--muted)]">-</td>
+                    <td className="py-1 px-2 text-[var(--muted)]">-</td>
+                    <td className="py-1 px-2 text-[var(--muted)]">-</td>
+                    <td className="py-1 px-2 text-accent">60</td>
+                    <td className="py-1 px-2">3</td>
+                    <td className="py-1 px-2">-</td>
                     <td className="py-1 px-2">2024-01-15</td>
                   </tr>
                 </tbody>
