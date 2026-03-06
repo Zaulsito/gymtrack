@@ -53,12 +53,13 @@ export default function PartnerScreen({ onClose, onRegister }) {
   const partnerIds = state?.partners || []
 
   useEffect(() => {
+    if (!state?.partners) return
     loadPartners()
     loadNotifications()
     if (inviteUid && inviteUid !== currentUser?.uid && !partnerIds.includes(inviteUid)) {
       loadInviter(inviteUid)
     }
-  }, [])
+  }, [state?.partners])
 
   async function loadInviter(uid) {
     try {
@@ -203,7 +204,7 @@ export default function PartnerScreen({ onClose, onRegister }) {
         <div className="font-bebas text-[1.4rem] tracking-widest">Partner</div>
       </div>
 
-      <div className="p-6 max-w-[500px] mx-auto flex flex-col gap-4">
+      <div className="p-6 pb-6 max-w-[500px] mx-auto flex flex-col gap-4">
 
         {/* Notificaciones */}
         {notifications.length > 0 && (
