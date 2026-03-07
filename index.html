@@ -12,7 +12,8 @@
         var saved = localStorage.getItem('gymtrack_theme') || 'default'
         var isLight = saved.startsWith('light')
         document.querySelector('meta[name="theme-color"]').setAttribute('content', colors[saved] || '#0a0a0f')
-        document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]').setAttribute('content', isLight ? 'default' : 'black-translucent')
+        var sb = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]')
+        if (sb) sb.setAttribute('content', isLight ? 'default' : 'black-translucent')
         if (saved !== 'default') document.documentElement.classList.add('theme-' + saved)
       })()
     </script>
