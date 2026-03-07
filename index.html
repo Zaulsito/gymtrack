@@ -5,28 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no" />
     <title>GymTrack</title>
     <meta name="description" content="Tu seguimiento de gimnasio personal" />
+    <meta name="theme-color" content="#c8ff00" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="theme-color" content="#0a0a0f" id="theme-color-meta" />
     <script>
       (function() {
+        var colors = { default:'#0a0a0f', red:'#0f0a0a', pink:'#0f0a0d', blue:'#090b14', cyan:'#080f12', light:'#f0f2f5', 'light-red':'#fdf2f2', 'light-pink':'#fdf2f8', 'light-blue':'#f0f4ff', 'light-cyan':'#f0faff' }
         var saved = localStorage.getItem('gymtrack_theme') || 'default'
-        var bgMap = {
-          'default':     '#0a0a0f',
-          'red':         '#0f0a0a',
-          'pink':        '#0f0a0d',
-          'blue':        '#090b14',
-          'cyan':        '#080f12',
-          'light':       '#f0f2f5',
-          'light-red':   '#fdf2f2',
-          'light-pink':  '#fdf2f8',
-          'light-blue':  '#f0f4ff',
-          'light-cyan':  '#f0faff'
-        }
-        var color = bgMap[saved] || '#0a0a0f'
-        var tc = document.getElementById('theme-color-meta') || document.querySelector('meta[name="theme-color"]')
-        if (tc) tc.content = color
+        var isLight = saved.startsWith('light')
+        document.querySelector('meta[name="theme-color"]').setAttribute('content', colors[saved] || '#0a0a0f')
+        var sb = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]')
+        if (sb) sb.setAttribute('content', isLight ? 'default' : 'black-translucent')
         if (saved !== 'default') document.documentElement.setAttribute('data-theme', saved)
       })()
     </script>

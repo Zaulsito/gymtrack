@@ -48,8 +48,15 @@ export default function App() {
     setScreen(s)
   }
 
-
-
+  // Load theme on mount
+  useEffect(() => {
+    const COLORS = { default:'#000000', red:'#ff2d2d', pink:'#ff85c2', blue:'#4d8eff', cyan:'#00e5ff',light:'#ffffff','light-red':'#f4a8a8','light-pink':'#e99cc6','light-blue': '#8ba4e9', 'light-cyan': '#f0faff'}
+    const saved = localStorage.getItem('gymtrack_theme') || 'default'
+    document.body.classList.remove('theme-red','theme-pink','theme-blue','theme-cyan','theme-light','theme-light-red','theme-light-pink','theme-light-blue','theme-light-cyan')
+    if (saved !== 'default') document.body.classList.add(`theme-${saved}`)
+    const meta = document.querySelector('meta[name="theme-color"]')
+    if (meta) meta.setAttribute('content', COLORS[saved] || '#000000')
+  }, [])
 
   function handleCompleteProfileDone(firstName) {
     setWelcomeName(firstName)
