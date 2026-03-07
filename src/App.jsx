@@ -55,7 +55,7 @@ export default function App() {
     document.body.classList.remove('theme-red','theme-pink','theme-blue','theme-cyan','theme-light','theme-light-red','theme-light-pink','theme-light-blue','theme-light-cyan')
     if (saved !== 'default') document.body.classList.add(`theme-${saved}`)
     const meta = document.querySelector('meta[name="theme-color"]')
-    if (meta) meta.setAttribute('content', COLORS[saved] || '#000000')
+    if (meta) meta.setAttribute('content', COLORS[saved] || '#c8ff00')
   }, [])
 
   function handleCompleteProfileDone(firstName) {
