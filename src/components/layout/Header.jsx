@@ -4,7 +4,7 @@ import { auth } from '../../lib/firebase'
 import { useApp } from '../../context/AppContext'
 import { THEMES } from '../../lib/utils'
 
-export default function Header({ onOpenProfile, onOpenCalendar, onOpenPartner, onOpenBody, onOpenStats, onOpenRoutines, onOpenNotifications, onShare, onExportExcel, onImportExcel }) {
+export default function Header({ onOpenProfile, onOpenCalendar, onOpenPartner, onOpenBody, onOpenStats, onOpenRoutines, onOpenNotifications, onOpenChangelog, onShare, onExportExcel, onImportExcel }) {
   const { state, currentUser, isDemoMode, exitDemoMode, theme, setTheme, showToast } = useApp()
   const [dropUser,  setDropUser]  = useState(false)
   const [dropTheme, setDropTheme] = useState(false)
@@ -27,22 +27,40 @@ export default function Header({ onOpenProfile, onOpenCalendar, onOpenPartner, o
         {/* Theme dropdown */}
         <div className="relative">
           <button
-            className="bg-[var(--surface2)] border border-[var(--border-color)] rounded-lg text-[var(--text)] text-xs px-3 py-1.5 flex items-center gap-1.5 cursor-pointer hover:border-accent transition-colors"
+            className="bg-[var(--surface2)] border border-[var(--border-color)] rounded-lg text-[var(--text)] text-xs px-2 py-1.5 flex items-center gap-1.5 cursor-pointer hover:border-accent transition-colors"
             onClick={() => { setDropTheme(v => !v); setDropUser(false) }}
           >
-            🎨 <span>{THEMES[theme]?.label || 'Verde'}</span> ▾
+            <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: THEMES[theme]?.color }} />
+            ▾
           </button>
           {dropTheme && (
             <>
               <div className="fixed inset-0 z-10" onClick={() => setDropTheme(false)} />
-              <div className="absolute right-0 top-[calc(100%+6px)] bg-[var(--surface)] border border-[var(--border-color)] rounded-xl min-w-[160px] z-20 overflow-hidden shadow-2xl">
-                {Object.entries(THEMES).map(([key, { label, color }]) => (
-                  <button key={key} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[var(--text)] hover:bg-[var(--surface2)] text-left"
-                    onClick={() => { setTheme(key); setDropTheme(false) }}>
-                    <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: color }} />
-                    {label}
-                  </button>
-                ))}
+              <div className="absolute right-0 top-[calc(100%+6px)] bg-[var(--surface)] border border-[var(--border-color)] rounded-xl z-20 shadow-2xl overflow-hidden w-[200px]">
+                {/* Oscuros */}
+                <div className="px-3 py-1.5 text-[0.6rem] text-[var(--muted)] uppercase tracking-wider border-b border-[var(--border-color)]">🌙 Oscuro</div>
+                <div className="grid grid-cols-2">
+                  {Object.entries(THEMES).filter(([,v]) => v.dark).map(([key, { label, color }]) => (
+                    <button key={key}
+                      className={`flex items-center gap-1.5 px-2 py-2 text-xs text-[var(--text)] hover:bg-[var(--surface2)] text-left ${theme === key ? 'bg-[var(--surface2)]' : ''}`}
+                      onClick={() => { setTheme(key); setDropTheme(false) }}>
+                      <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: color }} />
+                      <span className="truncate">{label.split(' / ')[0]}</span>
+                    </button>
+                  ))}
+                </div>
+                {/* Claros */}
+                <div className="px-3 py-1.5 text-[0.6rem] text-[var(--muted)] uppercase tracking-wider border-y border-[var(--border-color)]">☀ Claro</div>
+                <div className="grid grid-cols-2">
+                  {Object.entries(THEMES).filter(([,v]) => !v.dark).map(([key, { label, color }]) => (
+                    <button key={key}
+                      className={`flex items-center gap-1.5 px-2 py-2 text-xs text-[var(--text)] hover:bg-[var(--surface2)] text-left ${theme === key ? 'bg-[var(--surface2)]' : ''}`}
+                      onClick={() => { setTheme(key); setDropTheme(false) }}>
+                      <span className="w-2.5 h-2.5 rounded-full flex-shrink-0 border border-[var(--border-color)]" style={{ background: color }} />
+                      <span className="truncate">{label.split(' / ')[0]}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
             </>
           )}
@@ -70,6 +88,7 @@ export default function Header({ onOpenProfile, onOpenCalendar, onOpenPartner, o
                   { icon: '📅', label: 'Calendario',       action: onOpenCalendar  },
                   { icon: '📋', label: 'Rutinas',            action: onOpenRoutines      },
                   { icon: '🔔', label: 'Notificaciones',     action: onOpenNotifications },
+                  { icon: '📝', label: 'Actualizaciones',    action: onOpenChangelog     },
                   { icon: '📊', label: 'Estadísticas',     action: onOpenStats     },
                   { icon: '📤', label: 'Compartir progreso',action: onShare         },
                   { icon: '🤝', label: 'Partner',          action: onOpenPartner   },
