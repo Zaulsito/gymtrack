@@ -13,12 +13,6 @@ import ExerciseList          from './components/exercises/ExerciseList'
 import CalendarScreen        from './components/calendar/CalendarScreen'
 import ProfileScreen         from './components/profile/ProfileScreen'
 import CompleteProfileScreen from './components/profile/CompleteProfileScreen'
-import BodyWeightScreen      from './components/profile/BodyWeightScreen'
-import StatsScreen           from './components/stats/StatsScreen'
-import RoutinesScreen        from './components/routines/RoutinesScreen'
-import NotificationsScreen   from './components/notifications/NotificationsScreen'
-import ChangelogScreen       from './components/changelog/ChangelogScreen'
-import { useNotifications }  from './hooks/useNotifications'
 import PartnerScreen         from './components/partner/PartnerScreen'
 import { PrivacyModal, WelcomeModal } from './components/modals/Modals'
 import ShareModal from './components/modals/ShareModal'
@@ -27,9 +21,8 @@ import * as XLSX from 'xlsx'
 import { formatDate } from './lib/utils'
 
 export default function App() {
-  const { state, currentUser, isDemoMode, exitDemoMode, showToast, myLogs, loadUserData, setCurrentUser } = useApp()
-  useNotifications(state)
-  const { authState, setAuthState, pendingUser, justVerified, setJustVerified } = useAuth()
+  const { state, currentUser, exitDemoMode, showToast, myLogs } = useApp()
+  const { authState, setAuthState, pendingUser } = useAuth()
 
   const [screen, setScreen] = useState(() => sessionStorage.getItem('gymtrack_screen') || null)
   const [modal,         setModal]         = useState(null)
@@ -157,15 +150,10 @@ export default function App() {
   return (
     <div className="min-h-screen bg-[var(--bg)]">
       <Header
-        onOpenProfile={() => navigateTo('profile')}
-        onOpenCalendar={() => navigateTo('calendar')}
-        onOpenPartner={() => navigateTo('partner')}
-        onOpenBody={() => navigateTo('body')}
-        onOpenStats={() => navigateTo('stats')}
-        onOpenRoutines={() => navigateTo('routines')}
-        onOpenNotifications={() => navigateTo('notifications')}
-        onOpenChangelog={() => navigateTo('changelog')}
-        onShare={() => setShowShare(true)}
+        onOpenProfile={() => setScreen('profile')}
+        onOpenCalendar={() => setScreen('calendar')}
+        onOpenSummary={() => setModal('summary')}
+        onOpenPartner={() => setScreen('partner')}
         onExportExcel={exportExcel}
         onImportExcel={() => setShowImport(true)}
       />
@@ -173,15 +161,13 @@ export default function App() {
       {!screen && <ExerciseList />}
       <Toast />
 
-      {screen === 'calendar' && <CalendarScreen    onClose={() => navigateTo(null)} />}
-      {screen === 'profile'  && <ProfileScreen      onClose={() => navigateTo(null)} />}
-      {screen === 'partner'  && <PartnerScreen      onClose={() => navigateTo(null)} onRegister={() => { navigateTo(null); setShowAuthPanel('register'); setShowAuth(true) }} />}
-      {screen === 'body'     && <BodyWeightScreen   onClose={() => navigateTo(null)} />}
-      {screen === 'stats'    && <StatsScreen        onClose={() => navigateTo(null)} />}
-      {screen === 'routines'       && <RoutinesScreen       onClose={() => navigateTo(null)} />}
-      {screen === 'notifications'  && <NotificationsScreen  onClose={() => navigateTo(null)} />}
-      {screen === 'changelog'      && <ChangelogScreen      onClose={() => navigateTo(null)} />}
+      {/* Screens */}
+      {screen === 'calendar' && <CalendarScreen onClose={() => setScreen(null)} />}
+      {screen === 'profile'  && <ProfileScreen  onClose={() => setScreen(null)} />}
+      {screen === 'partner'  && <PartnerScreen  onClose={() => setScreen(null)} />}
 
+      {/* Modals */}
+      {modal === 'summary' && <SummaryModal  onClose={() => setModal(null)} />}
       {modal === 'privacy' && <PrivacyModal  onClose={() => setModal(null)} />}
       {modal === 'welcome' && <WelcomeModal  firstName={welcomeName} onClose={() => setModal(null)} />}
       {showImport && <ImportModal onClose={() => setShowImport(false)} />}

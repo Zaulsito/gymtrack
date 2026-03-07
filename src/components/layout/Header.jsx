@@ -4,7 +4,7 @@ import { auth } from '../../lib/firebase'
 import { useApp } from '../../context/AppContext'
 import { THEMES } from '../../lib/utils'
 
-export default function Header({ onOpenProfile, onOpenCalendar, onOpenPartner, onOpenBody, onOpenStats, onOpenRoutines, onOpenNotifications, onOpenChangelog, onShare, onExportExcel, onImportExcel }) {
+export default function Header({ onOpenProfile, onOpenCalendar, onOpenSummary, onOpenPartner, onExportExcel }) {
   const { state, currentUser, isDemoMode, exitDemoMode, theme, setTheme, showToast } = useApp()
   const [dropUser,  setDropUser]  = useState(false)
   const [dropTheme, setDropTheme] = useState(false)
@@ -86,11 +86,7 @@ export default function Header({ onOpenProfile, onOpenCalendar, onOpenPartner, o
                 {[
                   { icon: '👤', label: 'Mi Perfil',        action: onOpenProfile   },
                   { icon: '📅', label: 'Calendario',       action: onOpenCalendar  },
-                  { icon: '📋', label: 'Rutinas',            action: onOpenRoutines      },
-                  { icon: '🔔', label: 'Notificaciones',     action: onOpenNotifications },
-                  { icon: '📝', label: 'Actualizaciones',    action: onOpenChangelog     },
-                  { icon: '📊', label: 'Estadísticas',     action: onOpenStats     },
-                  { icon: '📤', label: 'Compartir progreso',action: onShare         },
+                  { icon: '📊', label: 'Resumen mensual',  action: onOpenSummary   },
                   { icon: '🤝', label: 'Partner',          action: onOpenPartner   },
                   { icon: '⚖️', label: 'Peso corporal',    action: onOpenBody      },
                   { icon: '↓',  label: 'Exportar Excel',   action: onExportExcel   },
