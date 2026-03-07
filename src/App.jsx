@@ -16,6 +16,8 @@ import CompleteProfileScreen from './components/profile/CompleteProfileScreen'
 import BodyWeightScreen      from './components/profile/BodyWeightScreen'
 import StatsScreen           from './components/stats/StatsScreen'
 import RoutinesScreen        from './components/routines/RoutinesScreen'
+import NotificationsScreen   from './components/notifications/NotificationsScreen'
+import { useNotifications }  from './hooks/useNotifications'
 import PartnerScreen         from './components/partner/PartnerScreen'
 import { PrivacyModal, WelcomeModal } from './components/modals/Modals'
 import ShareModal from './components/modals/ShareModal'
@@ -25,6 +27,7 @@ import { formatDate } from './lib/utils'
 
 export default function App() {
   const { state, currentUser, isDemoMode, exitDemoMode, showToast, myLogs, loadUserData, setCurrentUser } = useApp()
+  useNotifications(state)
   const { authState, setAuthState, pendingUser, justVerified, setJustVerified } = useAuth()
 
   const [screen, setScreen] = useState(() => sessionStorage.getItem('gymtrack_screen') || null)
@@ -159,6 +162,7 @@ export default function App() {
         onOpenBody={() => navigateTo('body')}
         onOpenStats={() => navigateTo('stats')}
         onOpenRoutines={() => navigateTo('routines')}
+        onOpenNotifications={() => navigateTo('notifications')}
         onShare={() => setShowShare(true)}
         onExportExcel={exportExcel}
         onImportExcel={() => setShowImport(true)}
@@ -172,7 +176,8 @@ export default function App() {
       {screen === 'partner'  && <PartnerScreen      onClose={() => navigateTo(null)} onRegister={() => { navigateTo(null); setShowAuthPanel('register'); setShowAuth(true) }} />}
       {screen === 'body'     && <BodyWeightScreen   onClose={() => navigateTo(null)} />}
       {screen === 'stats'    && <StatsScreen        onClose={() => navigateTo(null)} />}
-      {screen === 'routines' && <RoutinesScreen     onClose={() => navigateTo(null)} />}
+      {screen === 'routines'       && <RoutinesScreen       onClose={() => navigateTo(null)} />}
+      {screen === 'notifications'  && <NotificationsScreen  onClose={() => navigateTo(null)} />}
 
       {modal === 'privacy' && <PrivacyModal  onClose={() => setModal(null)} />}
       {modal === 'welcome' && <WelcomeModal  firstName={welcomeName} onClose={() => setModal(null)} />}

@@ -17,6 +17,57 @@ function EditModal({ ex, onClose }) {
   const [extraType,   setExtraType]   = useState(ex.maquina ? 'maquina' : 'descripcion')
   const [extraValue,  setExtraValue]  = useState(ex.maquina || ex.descripcion || '')
   const [showTooltip, setShowTooltip] = useState(false)
+  const [photo,       setPhoto]       = useState(ex.photo || null)
+  const [tecnica,     setTecnica]     = useState(ex.tecnica || '')
+  const [loadingAI,   setLoadingAI]   = useState(false)
+  const fileRef = useRef(null)
+
+  async function handlePhoto(e) {
+    const file = e.target.files[0]
+    if (!file) return
+    try {
+      const { resizeImage } = await import('../../lib/utils')
+      const base64 = await resizeImage(file, 600)
+      setPhoto(base64)
+    } catch { showToast('⚠ Error al procesar la imagen', 'warn') }
+  }
+
+  async function generateTecnica() {
+    if (!import.meta.env.VITE_GROQ_KEY) {
+      showToast('⚠ Falta VITE_GROQ_KEY en .env.local', 'warn')
+      return
+    }
+    setLoadingAI(true)
+    try {
+      const isDev = import.meta.env.DEV
+      const url   = isDev ? '/api/groq/openai/v1/chat/completions' : 'https://api.groq.com/openai/v1/chat/completions'
+      const resp = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_GROQ_KEY}`,
+        },
+        body: JSON.stringify({
+          model: 'llama-3.3-70b-versatile',
+          max_tokens: 500,
+          messages: [{
+            role: 'user',
+            content: `Eres un entrenador personal experto. Para el ejercicio "${name}", proporciona en español:
+1. Músculos principales trabajados
+2. Postura y técnica correcta (3-4 pasos clave)
+3. Errores comunes a evitar
+4. Consejo de respiración
+
+Sé conciso, máximo 200 palabras. Usa emojis para separar secciones.`
+          }]
+        })
+      })
+      const data = await resp.json()
+      const text = data.choices?.[0]?.message?.content || ''
+      setTecnica(text)
+    } catch { showToast('⚠ Error al generar técnica', 'warn') }
+    setLoadingAI(false)
+  }
 
   function save() {
     if (!name.trim()) { showToast('⚠ Ingresa el nombre', 'warn'); return }
@@ -31,6 +82,8 @@ function EditModal({ ex, onClose }) {
         cat,
         maquina:     extraType === 'maquina'     ? extraValue.trim() : '',
         descripcion: extraType === 'descripcion' ? extraValue.trim() : '',
+        photo,
+        tecnica,
       })
     }))
     showToast('✓ Ejercicio actualizado', 'ok')
@@ -39,7 +92,7 @@ function EditModal({ ex, onClose }) {
 
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal-box">
+      <div className="modal-box max-h-[90vh] overflow-y-auto">
         <h2 className="font-bebas text-[1.6rem] tracking-wider text-accent mb-4">Editar Ejercicio</h2>
         <div className="flex flex-col gap-4">
 
@@ -87,6 +140,47 @@ function EditModal({ ex, onClose }) {
               : <input className="input-field" type="text"   placeholder="Ej: Agarre neutro..." value={extraValue} onChange={e => setExtraValue(e.target.value)} />
             }
           </div>
+
+          {/* Foto del ejercicio */}
+          <div className="flex flex-col gap-2">
+            <label className="text-xs text-[var(--muted)] uppercase tracking-wider">📸 Foto de referencia</label>
+            {photo ? (
+              <div className="relative">
+                <img src={photo} alt="Referencia" className="w-full rounded-xl object-cover max-h-48" />
+                <button
+                  className="absolute top-2 right-2 bg-[var(--down)] text-white text-xs px-2 py-1 rounded-lg"
+                  onClick={() => setPhoto(null)}
+                >✕ Quitar</button>
+              </div>
+            ) : (
+              <button className="btn-outline py-3 text-sm" onClick={() => fileRef.current?.click()}>
+                📷 Subir foto
+              </button>
+            )}
+            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handlePhoto} />
+          </div>
+
+          {/* Técnica con IA */}
+          <div className="flex flex-col gap-2">
+            <label className="text-xs text-[var(--muted)] uppercase tracking-wider">🤖 Técnica correcta</label>
+            {tecnica ? (
+              <div className="bg-[var(--surface2)] border border-[var(--border-color)] rounded-xl p-3 text-xs text-[var(--text)] whitespace-pre-wrap leading-relaxed">
+                {tecnica}
+              </div>
+            ) : null}
+            <button
+              className="btn-outline py-2.5 text-sm flex items-center justify-center gap-2"
+              onClick={generateTecnica}
+              disabled={loadingAI}
+            >
+              {loadingAI ? (
+                <><span className="animate-spin">⏳</span> Generando...</>
+              ) : (
+                <>{tecnica ? '🔄 Regenerar técnica' : '✨ Generar técnica con IA'}</>
+              )}
+            </button>
+          </div>
+
         </div>
 
         <div className="flex gap-3 mt-6">
@@ -259,6 +353,22 @@ export default function ExerciseCard({ ex, logs = [] }) {
             )}
 
             <ExerciseChart logs={logs} />
+
+            {/* Foto de referencia */}
+            {ex.photo && (
+              <div className="mt-3">
+                <div className="text-[0.72rem] text-[var(--muted)] uppercase tracking-wider mb-2">📸 Referencia</div>
+                <img src={ex.photo} alt="Referencia" className="w-full rounded-xl object-cover max-h-52 border border-[var(--border-color)]" />
+              </div>
+            )}
+
+            {/* Técnica */}
+            {ex.tecnica && (
+              <div className="mt-3 bg-[var(--surface2)] border border-[var(--border-color)] rounded-xl p-3">
+                <div className="text-[0.72rem] text-[var(--muted)] uppercase tracking-wider mb-2">🤖 Técnica correcta</div>
+                <p className="text-xs text-[var(--text)] whitespace-pre-wrap leading-relaxed">{ex.tecnica}</p>
+              </div>
+            )}
 
             {isFull && (
               <div className="flex items-center gap-2 mt-3 p-2 rounded-lg text-xs text-[var(--hold)] border border-[rgba(255,215,0,0.2)] bg-[rgba(255,215,0,0.08)]">
