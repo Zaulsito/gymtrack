@@ -10,7 +10,7 @@ export function AppProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null)
   const [isDemoMode,  setIsDemoMode]  = useState(false)
   const [toast,       setToast]       = useState({ msg: '', type: '', visible: false })
-  const [theme,       setThemeState]  = useState(() => localStorage.getItem('gymtrack_theme') || 'default')
+  const [theme,       setThemeState]  = useState(() => localStorage.getItem('gymtrack_theme') || 'light')
   const saveTimeout = useRef(null)
   const toastTimer  = useRef(null)
 
