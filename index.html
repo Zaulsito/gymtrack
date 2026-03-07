@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no" />
     <title>GymTrack</title>
     <meta name="description" content="Tu seguimiento de gimnasio personal" />
-    <meta name="theme-color" content="#c8ff00" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -14,7 +13,12 @@
         var colors = { default:'#0a0a0f', red:'#0f0a0a', pink:'#0f0a0d', blue:'#090b14', cyan:'#080f12', light:'#f0f2f5', 'light-red':'#fdf2f2', 'light-pink':'#fdf2f8', 'light-blue':'#f0f4ff', 'light-cyan':'#f0faff' }
         var saved = localStorage.getItem('gymtrack_theme') || 'default'
         var isLight = saved.startsWith('light')
-        document.querySelector('meta[name="theme-color"]').setAttribute('content', colors[saved] || '#0a0a0f')
+        var color = colors[saved] || '#0a0a0f'
+        // Crear el meta theme-color dinámicamente con el color correcto desde el inicio
+        var tc = document.createElement('meta')
+        tc.name = 'theme-color'
+        tc.content = color
+        document.head.appendChild(tc)
         var sb = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]')
         if (sb) sb.setAttribute('content', isLight ? 'default' : 'black-translucent')
         if (saved !== 'default') document.documentElement.setAttribute('data-theme', saved)
