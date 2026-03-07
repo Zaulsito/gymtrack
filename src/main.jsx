@@ -6,12 +6,18 @@ import './index.css'
 
 // Aplicar tema ANTES de que React renderice para evitar flash
 ;(function() {
-  const COLORS = { default:'#c8ff00', red:'#ff2d2d', pink:'#ff85c2', blue:'#4d8eff', cyan:'#00e5ff', light:'#2563eb' }
-  const saved  = localStorage.getItem('gymtrack_theme') || 'default'
-  document.body.classList.remove('theme-red','theme-pink','theme-blue','theme-cyan','theme-light')
+  const COLORS = {
+    default:'#0a0a0f', red:'#0f0a0a', pink:'#0f0a0d', blue:'#090b14', cyan:'#080f12',
+    light:'#f0f2f5', 'light-red':'#fdf2f2', 'light-pink':'#fdf2f8', 'light-blue':'#f0f4ff', 'light-cyan':'#f0faff'
+  }
+  const saved   = localStorage.getItem('gymtrack_theme') || 'default'
+  const isLight = saved.startsWith('light')
+  document.body.classList.remove('theme-red','theme-pink','theme-blue','theme-cyan','theme-light','theme-light-red','theme-light-pink','theme-light-blue','theme-light-cyan')
   if (saved !== 'default') document.body.classList.add(`theme-${saved}`)
   const meta = document.querySelector('meta[name="theme-color"]')
-  if (meta) meta.setAttribute('content', COLORS[saved] || '#c8ff00')
+  if (meta) meta.setAttribute('content', COLORS[saved] || '#0a0a0f')
+  const statusBar = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]')
+  if (statusBar) statusBar.setAttribute('content', isLight ? 'default' : 'black-translucent')
 })()
 
 ReactDOM.createRoot(document.getElementById('root')).render(
