@@ -123,12 +123,17 @@ export function AppProvider({ children }) {
     setState(null)
   }, [])
 
-  // ── THEME ──────────────────────────────────────────────────────────────────
-  const setTheme = useCallback((theme) => {
-    document.body.classList.remove('theme-red','theme-pink','theme-blue','theme-cyan')
-    if (theme !== 'default') document.body.classList.add(`theme-${theme}`)
-    localStorage.setItem('gymtrack_theme', theme)
-    setThemeState(theme)
+  const setTheme = useCallback((t) => {
+    document.body.classList.remove('theme-red','theme-pink','theme-blue','theme-cyan','theme-light','theme-light-red','theme-light-pink','theme-light-blue','theme-light-cyan')
+    if (t !== 'default') document.body.classList.add(`theme-${t}`)
+    localStorage.setItem('gymtrack_theme', t)
+    setThemeState(t)
+    const isLight = t.startsWith('light')
+    const colors = { default:'#0a0a0f', red:'#0f0a0a', pink:'#0f0a0d', blue:'#090b14', cyan:'#080f12', light:'#f0f2f5', 'light-red':'#fdf2f2', 'light-pink':'#fdf2f8', 'light-blue':'#f0f4ff', 'light-cyan':'#f0faff' }
+    const meta = document.querySelector('meta[name="theme-color"]')
+    if (meta) meta.setAttribute('content', colors[t] || '#0a0a0f')
+    const statusBar = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]')
+    if (statusBar) statusBar.setAttribute('content', isLight ? 'default' : 'black-translucent')
   }, [])
 
   const myLogs = useCallback(() => {

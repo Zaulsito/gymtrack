@@ -6,6 +6,16 @@
     <title>GymTrack</title>
     <meta name="description" content="Tu seguimiento de gimnasio personal" />
     <meta name="theme-color" content="#c8ff00" />
+    <script>
+      (function() {
+        var colors = { default:'#0a0a0f', red:'#0f0a0a', pink:'#0f0a0d', blue:'#090b14', cyan:'#080f12', light:'#f0f2f5', 'light-red':'#fdf2f2', 'light-pink':'#fdf2f8', 'light-blue':'#f0f4ff', 'light-cyan':'#f0faff' }
+        var saved = localStorage.getItem('gymtrack_theme') || 'default'
+        var isLight = saved.startsWith('light')
+        document.querySelector('meta[name="theme-color"]').setAttribute('content', colors[saved] || '#0a0a0f')
+        document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]').setAttribute('content', isLight ? 'default' : 'black-translucent')
+        if (saved !== 'default') document.documentElement.classList.add('theme-' + saved)
+      })()
+    </script>
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
