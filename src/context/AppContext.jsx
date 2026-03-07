@@ -131,7 +131,7 @@ export function AppProvider({ children }) {
     const isLight = t.startsWith('light')
     const colors = { default:'#0a0a0f', red:'#0f0a0a', pink:'#0f0a0d', blue:'#090b14', cyan:'#080f12', light:'#f0f2f5', 'light-red':'#fdf2f2', 'light-pink':'#fdf2f8', 'light-blue':'#f0f4ff', 'light-cyan':'#f0faff' }
     const meta = document.querySelector('meta[name="theme-color"]')
-    if (meta) meta.setAttribute('content', colors[t] || '#0a0a0f')
+    if (meta) meta.setAttribute('content', isLight ? '#ffffff' : '#000000')
     const statusBar = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]')
     if (statusBar) statusBar.setAttribute('content', isLight ? 'default' : 'black-translucent')
   }, [])
