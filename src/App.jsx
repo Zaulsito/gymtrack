@@ -50,7 +50,7 @@ export default function App() {
 
   // Load theme on mount
   useEffect(() => {
-    const COLORS = { default:'#c8ff00', red:'#ff2d2d', pink:'#ff85c2', blue:'#4d8eff', cyan:'#00e5ff',light:'#ffffff',lightred:'#f4a8a8',lightpink:'#e99cc6',lightblue: '#8ba4e9', lightcyan: '#f0faff'}
+    const COLORS = { default:'#c8ff00', red:'#ff2d2d', pink:'#ff85c2', blue:'#4d8eff', cyan:'#00e5ff'}
     const saved = localStorage.getItem('gymtrack_theme') || 'default'
     document.body.classList.remove('theme-red','theme-pink','theme-blue','theme-cyan','theme-light','theme-lightred','theme-lightpink','theme-lightblue','theme-lightcyan')
     if (saved !== 'default') document.body.classList.add(`theme-${saved}`)
