@@ -15,7 +15,7 @@ import './index.css'
   document.body.classList.remove('theme-red','theme-pink','theme-blue','theme-cyan','theme-light','theme-light-red','theme-light-pink','theme-light-blue','theme-light-cyan')
   if (saved !== 'default') document.body.classList.add(`theme-${saved}`)
   const meta = document.querySelector('meta[name="theme-color"]')
-  if (meta) meta.setAttribute('content', isLight ? '#ffffff' : '#000000')
+  if (meta) meta.setAttribute('content', COLORS[saved] || '#0a0a0f')
   const statusBar = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]')
   if (statusBar) statusBar.setAttribute('content', isLight ? 'default' : 'black-translucent')
 })()

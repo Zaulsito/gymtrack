@@ -11,8 +11,19 @@
     <script>
       (function() {
         var saved = localStorage.getItem('gymtrack_theme') || 'default'
-        var isLight = saved.startsWith('light')
-        var color = isLight ? '#ffffff' : '#000000'
+        var bgMap = {
+          'default':     '#0a0a0f',
+          'red':         '#0f0a0a',
+          'pink':        '#0f0a0d',
+          'blue':        '#090b14',
+          'cyan':        '#080f12',
+          'light':       '#f0f2f5',
+          'light-red':   '#fdf2f2',
+          'light-pink':  '#fdf2f8',
+          'light-blue':  '#f0f4ff',
+          'light-cyan':  '#f0faff'
+        }
+        var color = bgMap[saved] || '#0a0a0f'
         var tc = document.createElement('meta')
         tc.name = 'theme-color'
         tc.content = color
