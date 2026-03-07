@@ -8,6 +8,7 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="theme-color" content="#0a0a0f" id="theme-color-meta" />
     <script>
       (function() {
         var saved = localStorage.getItem('gymtrack_theme') || 'default'
@@ -24,10 +25,8 @@
           'light-cyan':  '#f0faff'
         }
         var color = bgMap[saved] || '#0a0a0f'
-        var tc = document.createElement('meta')
-        tc.name = 'theme-color'
-        tc.content = color
-        document.head.appendChild(tc)
+        var tc = document.getElementById('theme-color-meta') || document.querySelector('meta[name="theme-color"]')
+        if (tc) tc.content = color
         if (saved !== 'default') document.documentElement.setAttribute('data-theme', saved)
       })()
     </script>
