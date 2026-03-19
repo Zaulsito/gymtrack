@@ -3,10 +3,19 @@ import { useApp } from '../../context/AppContext'
 import { today, formatDate, calcCondition, MAX_LOGS } from '../../lib/utils'
 import ExerciseChart from './ExerciseChart'
 
+const CAT_ICONS = {
+  'Piernas':'🦵','Brazos':'💪','Cuerpo':'🧍','Caderas':'🍑',
+  'Pecho':'🫀','Mancuernas':'🏋️','Abdominal':'⚡','Espalda':'🔙','Otros':'➕'
+}
+
 function CondBadge({ cond }) {
   if (!cond) return null
-  const cls  = cond === 'SUBE' ? 'badge-sube' : cond === 'BAJA' ? 'badge-baja' : 'badge-mantiene'
-  const icon = cond === 'SUBE' ? '↑' : cond === 'BAJA' ? '↓' : '→'
+  const map = {
+    SUBE:     { cls: 'badge-sube',     icon: '↑' },
+    BAJA:     { cls: 'badge-baja',     icon: '↓' },
+    MANTIENE: { cls: 'badge-mantiene', icon: '→' },
+  }
+  const { cls, icon } = map[cond] || {}
   return <span className={cls}>{icon} {cond}</span>
 }
 
@@ -33,57 +42,34 @@ function EditModal({ ex, onClose }) {
   }
 
   async function generateTecnica() {
-    if (!import.meta.env.VITE_GROQ_KEY) {
-      showToast('⚠ Falta VITE_GROQ_KEY en .env.local', 'warn')
-      return
-    }
+    if (!import.meta.env.VITE_GROQ_KEY) { showToast('⚠ Falta VITE_GROQ_KEY', 'warn'); return }
     setLoadingAI(true)
     try {
       const isDev = import.meta.env.DEV
       const url   = isDev ? '/api/groq/openai/v1/chat/completions' : 'https://api.groq.com/openai/v1/chat/completions'
-      const resp = await fetch(url, {
+      const resp  = await fetch(url, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_GROQ_KEY}`,
-        },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${import.meta.env.VITE_GROQ_KEY}` },
         body: JSON.stringify({
-          model: 'llama-3.3-70b-versatile',
-          max_tokens: 500,
-          messages: [{
-            role: 'user',
-            content: `Eres un entrenador personal experto. Para el ejercicio "${name}", proporciona en español:
-1. Músculos principales trabajados
-2. Postura y técnica correcta (3-4 pasos clave)
-3. Errores comunes a evitar
-4. Consejo de respiración
-
-Sé conciso, máximo 200 palabras. Usa emojis para separar secciones.`
-          }]
+          model: 'llama-3.3-70b-versatile', max_tokens: 500,
+          messages: [{ role: 'user', content: `Eres un entrenador personal experto. Para "${name}", proporciona en español: músculos, técnica (3-4 pasos), errores comunes, respiración. Máximo 200 palabras. Usa emojis.` }]
         })
       })
       const data = await resp.json()
-      const text = data.choices?.[0]?.message?.content || ''
-      setTecnica(text)
+      setTecnica(data.choices?.[0]?.message?.content || '')
     } catch { showToast('⚠ Error al generar técnica', 'warn') }
     setLoadingAI(false)
   }
 
   function save() {
     if (!name.trim()) { showToast('⚠ Ingresa el nombre', 'warn'); return }
-    if (extraType === 'maquina' && extraValue && isNaN(Number(extraValue))) {
-      showToast('⚠ El número de máquina debe ser un número', 'warn'); return
-    }
     updateState(prev => ({
       ...prev,
       exercises: prev.exercises.map(e => e.id !== ex.id ? e : {
-        ...e,
-        name:        name.trim().toUpperCase(),
-        cat,
+        ...e, name: name.trim().toUpperCase(), cat,
         maquina:     extraType === 'maquina'     ? extraValue.trim() : '',
         descripcion: extraType === 'descripcion' ? extraValue.trim() : '',
-        photo,
-        tecnica,
+        photo, tecnica,
       })
     }))
     showToast('✓ Ejercicio actualizado', 'ok')
@@ -92,42 +78,30 @@ Sé conciso, máximo 200 palabras. Usa emojis para separar secciones.`
 
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal-box max-h-[90vh] overflow-y-auto">
+      <div className="modal-box">
         <h2 className="font-bebas text-[1.6rem] tracking-wider text-accent mb-4">Editar Ejercicio</h2>
         <div className="flex flex-col gap-4">
-
-          <div className="flex flex-col gap-1">
-            <label className="text-xs text-[var(--muted)] uppercase tracking-wider">Nombre</label>
-            <input className="input-field" value={name} onChange={e => setName(e.target.value)} />
-          </div>
-
-          {/* ID no editable */}
+          <div><label className="text-xs text-[var(--muted)] uppercase tracking-wider">Nombre</label>
+            <input className="input-field mt-1" value={name} onChange={e => setName(e.target.value)} /></div>
           <div className="flex items-center gap-2 px-3 py-2 bg-[var(--surface2)] border border-[var(--border-color)] rounded-lg">
             <span className="text-xs text-[var(--muted)] uppercase tracking-wider">ID:</span>
             <span className="text-accent font-bold text-sm">#{ex.num}</span>
             <span className="text-xs text-[var(--muted)] ml-auto">no editable</span>
           </div>
-
-          <div className="flex flex-col gap-1">
-            <label className="text-xs text-[var(--muted)] uppercase tracking-wider">Categoría</label>
-            <select className="input-field" value={cat} onChange={e => setCat(e.target.value)}>
+          <div><label className="text-xs text-[var(--muted)] uppercase tracking-wider">Categoría</label>
+            <select className="input-field mt-1" value={cat} onChange={e => setCat(e.target.value)}>
               {(state?.categories || []).map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
-
           <div className="flex flex-col gap-2 bg-[var(--surface2)] border border-[var(--border-color)] rounded-xl p-3">
             <div className="flex items-center gap-2">
               <select className="input-field flex-1" value={extraType} onChange={e => { setExtraType(e.target.value); setExtraValue('') }}>
                 <option value="maquina">🏋 Máquina</option>
                 <option value="descripcion">📝 Descripción</option>
               </select>
-              <div className="relative flex-shrink-0">
-                <button
-                  className="w-[20px] h-[20px] rounded-full border border-[var(--muted)] text-[var(--muted)] text-[10px] font-bold flex items-center justify-center"
-                  onMouseEnter={() => setShowTooltip(true)}
-                  onMouseLeave={() => setShowTooltip(false)}
-                  onTouchStart={() => setShowTooltip(v => !v)}
-                >!</button>
+              <div className="relative">
+                <button className="w-5 h-5 rounded-full border border-[var(--muted)] text-[var(--muted)] text-[10px] font-bold flex items-center justify-center"
+                  onMouseEnter={() => setShowTooltip(true)} onMouseLeave={() => setShowTooltip(false)}>!</button>
                 {showTooltip && (
                   <div className="absolute right-0 top-6 z-50 w-60 bg-[var(--surface)] border border-[var(--border-color)] rounded-lg p-2 text-xs text-[var(--muted)] shadow-2xl">
                     Si usas máquinas de gimnasio, pon el número. Si no, agrega una descripción.
@@ -140,49 +114,28 @@ Sé conciso, máximo 200 palabras. Usa emojis para separar secciones.`
               : <input className="input-field" type="text"   placeholder="Ej: Agarre neutro..." value={extraValue} onChange={e => setExtraValue(e.target.value)} />
             }
           </div>
-
-          {/* Foto del ejercicio */}
           <div className="flex flex-col gap-2">
             <label className="text-xs text-[var(--muted)] uppercase tracking-wider">📸 Foto de referencia</label>
             {photo ? (
               <div className="relative">
-                <img src={photo} alt="Referencia" className="w-full rounded-xl object-cover max-h-48" />
-                <button
-                  className="absolute top-2 right-2 bg-[var(--down)] text-white text-xs px-2 py-1 rounded-lg"
-                  onClick={() => setPhoto(null)}
-                >✕ Quitar</button>
+                <img src={photo} alt="Ref" className="w-full rounded-xl object-cover max-h-48" />
+                <button className="absolute top-2 right-2 bg-[var(--down)] text-white text-xs px-2 py-1 rounded-lg" onClick={() => setPhoto(null)}>✕ Quitar</button>
               </div>
             ) : (
-              <button className="btn-outline py-3 text-sm" onClick={() => fileRef.current?.click()}>
-                📷 Subir foto
-              </button>
+              <button className="btn-outline py-3 text-sm" onClick={() => fileRef.current?.click()}>📷 Subir foto</button>
             )}
             <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handlePhoto} />
           </div>
-
-          {/* Técnica con IA */}
           <div className="flex flex-col gap-2">
             <label className="text-xs text-[var(--muted)] uppercase tracking-wider">🤖 Técnica correcta</label>
-            {tecnica ? (
-              <div className="bg-[var(--surface2)] border border-[var(--border-color)] rounded-xl p-3 text-xs text-[var(--text)] whitespace-pre-wrap leading-relaxed">
-                {tecnica}
-              </div>
-            ) : null}
-            <button
-              className="btn-outline py-2.5 text-sm flex items-center justify-center gap-2"
-              onClick={generateTecnica}
-              disabled={loadingAI}
-            >
-              {loadingAI ? (
-                <><span className="animate-spin">⏳</span> Generando...</>
-              ) : (
-                <>{tecnica ? '🔄 Regenerar técnica' : '✨ Generar técnica con IA'}</>
-              )}
+            {tecnica && (
+              <div className="bg-[var(--surface2)] border border-[var(--border-color)] rounded-xl p-3 text-xs text-[var(--text)] whitespace-pre-wrap leading-relaxed">{tecnica}</div>
+            )}
+            <button className="btn-outline py-2.5 text-sm flex items-center justify-center gap-2" onClick={generateTecnica} disabled={loadingAI}>
+              {loadingAI ? <><span className="animate-spin">⏳</span> Generando...</> : <>{tecnica ? '🔄 Regenerar' : '✨ Generar técnica con IA'}</>}
             </button>
           </div>
-
         </div>
-
         <div className="flex gap-3 mt-6">
           <button className="btn-outline flex-1 py-2.5" onClick={onClose}>Cancelar</button>
           <button className="btn-accent flex-1 py-2.5" onClick={save}>Guardar</button>
@@ -192,56 +145,22 @@ Sé conciso, máximo 200 palabras. Usa emojis para separar secciones.`
   )
 }
 
-export default function ExerciseCard({ ex, logs = [] }) {
+export default function ExerciseCard({ ex, logs = [], onStartTimer }) {
   const { updateState, showToast, logsKey } = useApp()
-  const [expanded,  setExpanded]  = useState(false)
-  const [showEdit,  setShowEdit]  = useState(false)
-  const [timerSecs, setTimerSecs] = useState(null)  // null = off, >0 = running
-  const [timerMax,  setTimerMax]  = useState(90)
-  const timerRef = useRef(null)
+  const [showHistory, setShowHistory] = useState(false)
+  const [showEdit,    setShowEdit]    = useState(false)
+  const [peso,   setPeso]   = useState('')
+  const [reps,   setReps]   = useState('')
+  const [series, setSeries] = useState('')
+  const [secs,   setSecs]   = useState('')
+  const [tam,    setTam]    = useState('')
+  const [fecha,  setFecha]  = useState(today())
 
-  function startTimer(secs) {
-    clearInterval(timerRef.current)
-    setTimerMax(secs)
-    setTimerSecs(secs)
-    timerRef.current = setInterval(() => {
-      setTimerSecs(prev => {
-        if (prev <= 1) {
-          clearInterval(timerRef.current)
-          // Vibrar al terminar
-          if (navigator.vibrate) navigator.vibrate([300, 100, 300])
-          // Sonido al terminar
-          try {
-            const ctx = new (window.AudioContext || window.webkitAudioContext)()
-            const osc = ctx.createOscillator()
-            const gain = ctx.createGain()
-            osc.connect(gain); gain.connect(ctx.destination)
-            osc.frequency.value = 880
-            gain.gain.setValueAtTime(0.3, ctx.currentTime)
-            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.8)
-            osc.start(); osc.stop(ctx.currentTime + 0.8)
-          } catch {}
-          return 0
-        }
-        return prev - 1
-      })
-    }, 1000)
-  }
-
-  function stopTimer() {
-    clearInterval(timerRef.current)
-    setTimerSecs(null)
-  }
-  const [peso,      setPeso]      = useState('')
-  const [reps,      setReps]      = useState('')
-  const [series,    setSeries]    = useState('')
-  const [tam,       setTam]       = useState('')
-  const [secs,      setSecs]      = useState('')
-  const [fecha,     setFecha]     = useState(today())
-
-  const lastCond  = logs.length ? logs[logs.length - 1].cond : null
-  const condColor = lastCond === 'SUBE' ? 'var(--up)' : lastCond === 'BAJA' ? 'var(--down)' : lastCond === 'MANTIENE' ? 'var(--hold)' : 'var(--border-color)'
+  const lastLog   = logs.length ? logs[logs.length - 1] : null
+  const lastCond  = lastLog?.cond || null
   const isFull    = logs.length >= MAX_LOGS
+
+  const condColor = lastCond === 'SUBE' ? 'var(--up)' : lastCond === 'BAJA' ? 'var(--down)' : lastCond === 'MANTIENE' ? 'var(--hold)' : 'var(--border-color)'
 
   function addLog() {
     if (!peso && !reps && !secs) { showToast('⚠ Ingresa al menos peso, reps o segundos', 'warn'); return }
@@ -258,10 +177,10 @@ export default function ExerciseCard({ ex, logs = [] }) {
       if (!next.trainedDays[today()]) next.trainedDays[today()] = { note: '' }
       return next
     })
-    const msgs = { SUBE: '🔥 ¡Brutal! Superaste tu marca', BAJA: '💪 No te rindas, mañana lo recuperas', MANTIENE: '🎯 Consistencia es la clave' }
+    const msgs = { SUBE: '🔥 ¡Brutal! Superaste tu marca', BAJA: '💪 No te rindas', MANTIENE: '🎯 Consistencia es la clave' }
     showToast(msgs[cond] || '✓ Guardado', cond === 'SUBE' ? 'ok' : cond === 'BAJA' ? 'warn' : '')
+    if (onStartTimer) onStartTimer(90)
     setPeso(''); setReps(''); setSeries(''); setTam(''); setSecs(''); setFecha(today())
-    setExpanded(true)
   }
 
   function deleteLog(idx) {
@@ -277,7 +196,7 @@ export default function ExerciseCard({ ex, logs = [] }) {
   }
 
   function deleteExercise() {
-    if (!confirm(`¿Eliminar el ejercicio "${ex.name}"? Esta acción no se puede deshacer.`)) return
+    if (!confirm(`¿Eliminar "${ex.name}"? Esta acción no se puede deshacer.`)) return
     updateState(prev => {
       const uid  = logsKey()
       const next = { ...prev, exercises: prev.exercises.filter(e => e.id !== ex.id) }
@@ -288,142 +207,226 @@ export default function ExerciseCard({ ex, logs = [] }) {
 
   return (
     <>
-      <div className="bg-[var(--surface)] border border-[var(--border-color)] rounded-xl mb-4 overflow-hidden transition-colors hover:border-[rgba(200,255,0,0.3)]"
-        style={{ borderLeft: `3px solid ${condColor}` }}>
-
-        {/* Header */}
-        <div className="grid gap-3 items-center px-4 py-3.5 cursor-pointer"
-          style={{ gridTemplateColumns: '40px 1fr auto' }}
-          onClick={() => setExpanded(v => !v)}>
-          <div className="font-bebas text-[1.4rem] text-accent text-center">{ex.num}</div>
-          <div>
-            <div className="font-semibold text-[0.95rem]">{ex.name}</div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs text-[var(--muted)]">{ex.cat}</span>
-              {ex.maquina     && <span className="text-xs text-[var(--muted)]">🏋 Máq. {ex.maquina}</span>}
-              {ex.descripcion && <span className="text-xs text-[var(--muted)] italic">{ex.descripcion}</span>}
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            {lastCond && <CondBadge cond={lastCond} />}
-            <span className="text-[var(--muted)] transition-transform duration-300" style={{ display:'inline-block', transform: expanded ? 'rotate(180deg)' : 'none' }}>▾</span>
-          </div>
+      {/* ── DESKTOP card (horizontal) ── */}
+      <div
+        className="hidden md:flex bg-[var(--surface)] hover:bg-[var(--surface2)] border border-[var(--border-color)] rounded-2xl p-4 items-center gap-6 transition-all group cursor-pointer"
+        style={{ borderLeft: `3px solid ${condColor}` }}
+        onClick={() => setShowHistory(v => !v)}
+      >
+        {/* Icon */}
+        <div className="w-14 h-14 bg-[var(--surface2)] rounded-xl flex items-center justify-center text-2xl border border-[var(--border-color)] shrink-0">
+          {CAT_ICONS[ex.cat] || '💪'}
         </div>
 
-        {/* Body */}
-        {expanded && (
-          <div className="px-4 pb-4 border-t border-[var(--border-color)]">
-            {logs.length > 0 ? (
-              <div className="overflow-x-auto mt-3">
-                <table className="w-full text-xs min-w-[500px]" style={{ borderCollapse: 'collapse' }}>
-                  <thead>
-                    <tr>
-                      {['#','Peso','Reps','Segs','Series','Tamaño','Fecha','Condición',''].map(h => (
-                        <th key={h} className="text-[var(--muted)] font-medium text-left py-1.5 px-2 border-b border-[var(--border-color)] uppercase text-[0.7rem] tracking-wider">{h}</th>
-                      ))}
+        {/* Name + cat */}
+        <div className="flex-1 min-w-[180px]">
+          <h4 className="font-bebas text-lg tracking-widest text-[var(--text)] uppercase">{ex.name}</h4>
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-[10px] font-bold tracking-widest text-[var(--muted)] uppercase">{ex.cat}</span>
+            {ex.maquina     && <span className="text-[10px] text-[var(--muted)]">· Máq. {ex.maquina}</span>}
+            {ex.descripcion && <span className="text-[10px] text-[var(--muted)] italic">· {ex.descripcion}</span>}
+          </div>
+          {lastCond && (
+            <div className="mt-1"><CondBadge cond={lastCond} /></div>
+          )}
+        </div>
+
+        {/* Inputs */}
+        <div className="flex items-center gap-4" onClick={e => e.stopPropagation()}>
+          {[
+            { label: '🏋 Peso (KG)', val: peso,   set: setPeso,   ph: lastLog?.peso   || '0', step: '0.5' },
+            { label: '↩ Reps',       val: reps,    set: setReps,   ph: lastLog?.reps   || '0' },
+            { label: '◈ Series',     val: series,  set: setSeries, ph: lastLog?.series || '0' },
+            { label: '⏱ Segundos',   val: secs,    set: setSecs,   ph: lastLog?.secs   || '0' },
+            { label: '📐 Tamaño',    val: tam,     set: setTam,    ph: lastLog?.tam    || '-', type: 'text' },
+          ].map(({ label, val, set, ph, step, type }) => (
+            <div key={label} className="flex flex-col gap-1">
+              <label className="text-[9px] font-bold text-[var(--muted)] uppercase tracking-widest">{label}</label>
+              <input
+                type={type || 'number'}
+                step={step}
+                className="w-20 bg-[var(--bg)] border border-[var(--border-color)] rounded-xl px-3 py-2.5 text-accent font-bebas text-lg text-center focus:outline-none focus:border-accent transition-colors"
+                value={val}
+                placeholder={ph}
+                onChange={e => set(e.target.value)}
+              />
+            </div>
+          ))}
+        </div>
+
+        {/* Actions */}
+        <div className="flex items-center gap-2 shrink-0" onClick={e => e.stopPropagation()}>
+          <button
+            className="bg-accent text-black font-bebas px-6 py-2.5 rounded-full text-sm tracking-widest hover:shadow-[0_0_15px_rgba(200,255,0,0.4)] active:scale-95 transition-all"
+            onClick={addLog}
+          >Guardar</button>
+          <button
+            className="p-2 text-[var(--muted)] hover:text-accent transition-colors"
+            onClick={() => setShowEdit(true)}
+            title="Editar"
+          >✏️</button>
+          <button
+            className="p-2 text-[var(--muted)] hover:text-[var(--down)] transition-colors"
+            onClick={deleteExercise}
+            title="Eliminar"
+          >🗑</button>
+        </div>
+      </div>
+
+      {/* History desktop */}
+      {showHistory && (
+        <div className="hidden md:block bg-[var(--surface)] border border-[var(--border-color)] rounded-2xl p-5 -mt-1 border-t-0 rounded-t-none">
+          {logs.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs min-w-[500px]" style={{ borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr>{['#','Peso','Reps','Segs','Series','Tamaño','Fecha','Condición',''].map(h => (
+                    <th key={h} className="text-[var(--muted)] font-medium text-left py-1.5 px-2 border-b border-[var(--border-color)] uppercase text-[0.7rem] tracking-wider">{h}</th>
+                  ))}</tr>
+                </thead>
+                <tbody>
+                  {logs.map((l, idx) => (
+                    <tr key={idx} className={idx === logs.length - 1 ? 'bg-[rgba(200,255,0,0.04)]' : ''}>
+                      <td className="py-2 px-2 text-[var(--muted)] text-[0.7rem]">{idx === logs.length - 1 ? '★' : idx + 1}</td>
+                      <td className="py-2 px-2 font-bold">{l.peso || '-'}</td>
+                      <td className="py-2 px-2">{l.reps || '-'}</td>
+                      <td className="py-2 px-2">{l.secs ? `${l.secs}s` : '-'}</td>
+                      <td className="py-2 px-2">{l.series || '-'}</td>
+                      <td className="py-2 px-2">{l.tam || '-'}</td>
+                      <td className="py-2 px-2 text-[var(--muted)]">{formatDate(l.fecha)}</td>
+                      <td className="py-2 px-2"><CondBadge cond={l.cond} /></td>
+                      <td className="py-2 px-2"><button className="btn-danger py-0.5 px-1.5 text-[0.7rem]" onClick={() => deleteLog(idx)}>✕</button></td>
                     </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : <p className="text-[var(--muted)] text-sm">Sin registros aún.</p>}
+          <ExerciseChart logs={logs} />
+          {ex.photo && (
+            <div className="mt-3">
+              <div className="text-[0.72rem] text-[var(--muted)] uppercase tracking-wider mb-2">📸 Referencia</div>
+              <img src={ex.photo} alt="Ref" className="w-full rounded-xl object-cover max-h-52 border border-[var(--border-color)]" />
+            </div>
+          )}
+          {ex.tecnica && (
+            <div className="mt-3 bg-[var(--surface2)] border border-[var(--border-color)] rounded-xl p-3">
+              <div className="text-[0.72rem] text-[var(--muted)] uppercase tracking-wider mb-2">🤖 Técnica correcta</div>
+              <p className="text-xs text-[var(--text)] whitespace-pre-wrap leading-relaxed">{ex.tecnica}</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── MOBILE card ── */}
+      <div
+        className="md:hidden bg-[var(--surface)] border border-[var(--border-color)] rounded-2xl overflow-hidden transition-all"
+        style={{ borderLeft: `3px solid ${condColor}` }}
+      >
+        {/* Header */}
+        <div className="flex items-center gap-3 px-4 py-3">
+          <div className="w-10 h-10 bg-[var(--surface2)] rounded-xl flex items-center justify-center text-lg border border-[var(--border-color)] shrink-0">
+            {CAT_ICONS[ex.cat] || '💪'}
+          </div>
+          <div className="flex-1 min-w-0">
+            <h4 className="font-bebas text-base tracking-widest uppercase truncate">{ex.name}</h4>
+            <div className="flex items-center gap-1 flex-wrap">
+              <span className="text-[10px] text-[var(--muted)] uppercase">{ex.cat}</span>
+              {ex.maquina && <span className="text-[10px] text-[var(--muted)]">· Máq. {ex.maquina}</span>}
+              {lastCond && <CondBadge cond={lastCond} />}
+            </div>
+          </div>
+          <button
+            className="text-[var(--muted)] text-sm p-1"
+            onClick={() => setShowHistory(v => !v)}
+          >{showHistory ? '▲' : '▼'}</button>
+        </div>
+
+        {/* Inputs mobile */}
+        <div className="px-4 pb-3 flex flex-col gap-3">
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              { label: '🏋 Peso KG', val: peso,   set: setPeso,   ph: lastLog?.peso   || '0', step: '0.5' },
+              { label: '↩ Reps',     val: reps,    set: setReps,   ph: lastLog?.reps   || '0' },
+              { label: '◈ Series',   val: series,  set: setSeries, ph: lastLog?.series || '0' },
+            ].map(({ label, val, set, ph, step }) => (
+              <div key={label} className="flex flex-col gap-1">
+                <label className="text-[9px] font-bold text-[var(--muted)] uppercase tracking-widest">{label}</label>
+                <input
+                  type="number" step={step}
+                  className="w-full bg-[var(--bg)] border border-[var(--border-color)] rounded-xl h-12 text-center text-accent font-bebas text-xl focus:outline-none focus:border-accent transition-colors"
+                  value={val}
+                  placeholder={ph}
+                  onChange={e => set(e.target.value)}
+                />
+              </div>
+            ))}
+          </div>
+
+          <button
+            className="w-full py-3 bg-accent text-black font-bebas text-base tracking-widest rounded-full active:scale-95 transition-all shadow-[0_0_15px_rgba(200,255,0,0.2)]"
+            onClick={addLog}
+          >Guardar</button>
+        </div>
+
+        {/* History mobile */}
+        {showHistory && (
+          <div className="border-t border-[var(--border-color)] px-4 py-3">
+            {isFull && (
+              <div className="flex items-center gap-2 mb-2 p-2 rounded-lg text-xs text-[var(--hold)] border border-[rgba(255,215,0,0.2)] bg-[rgba(255,215,0,0.08)]">
+                ⚠ Límite de {MAX_LOGS} registros
+              </div>
+            )}
+            {logs.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs min-w-[400px]" style={{ borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr>{['#','Peso','Reps','Series','Fecha','Cond',''].map(h => (
+                      <th key={h} className="text-[var(--muted)] font-medium text-left py-1.5 px-2 border-b border-[var(--border-color)] uppercase text-[0.65rem] tracking-wider">{h}</th>
+                    ))}</tr>
                   </thead>
                   <tbody>
-                    {logs.map((l, idx) => {
-                      const isNewest = idx === logs.length - 1
-                      const isOldest = idx === 0 && isFull
-                      return (
-                        <tr key={idx} className={isNewest ? 'bg-[rgba(200,255,0,0.04)]' : isOldest ? 'opacity-50' : ''}>
-                          <td className="py-2 px-2 text-[var(--muted)] text-[0.7rem] whitespace-nowrap">
-                            {isOldest ? '🗑 antiguo' : isNewest ? '★ actual' : idx + 1}
-                          </td>
-                          <td className="py-2 px-2 font-bold">{l.peso || '-'}</td>
-                          <td className="py-2 px-2">{l.reps || '-'}</td>
-                          <td className="py-2 px-2">{l.secs ? `${l.secs}s` : '-'}</td>
-                          <td className="py-2 px-2">{l.series || '-'}</td>
-                          <td className="py-2 px-2">{l.tam || '-'}</td>
-                          <td className="py-2 px-2 text-[var(--muted)] whitespace-nowrap">{formatDate(l.fecha)}</td>
-                          <td className="py-2 px-2"><CondBadge cond={l.cond} /></td>
-                          <td className="py-2 px-2">
-                            <button className="btn-danger py-0.5 px-1.5 text-[0.7rem]" onClick={() => deleteLog(idx)}>✕</button>
-                          </td>
-                        </tr>
-                      )
-                    })}
+                    {logs.map((l, idx) => (
+                      <tr key={idx} className={idx === logs.length - 1 ? 'bg-[rgba(200,255,0,0.04)]' : ''}>
+                        <td className="py-1.5 px-2 text-[var(--muted)] text-[0.65rem]">{idx === logs.length - 1 ? '★' : idx + 1}</td>
+                        <td className="py-1.5 px-2 font-bold">{l.peso || '-'}</td>
+                        <td className="py-1.5 px-2">{l.reps || '-'}</td>
+                        <td className="py-1.5 px-2">{l.series || '-'}</td>
+                        <td className="py-1.5 px-2 text-[var(--muted)]">{formatDate(l.fecha)}</td>
+                        <td className="py-1.5 px-2"><CondBadge cond={l.cond} /></td>
+                        <td className="py-1.5 px-2"><button className="btn-danger py-0.5 px-1 text-[0.65rem]" onClick={() => deleteLog(idx)}>✕</button></td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
-            ) : (
-              <p className="text-[var(--muted)] text-sm py-2 mt-2">Sin registros aún.</p>
-            )}
+            ) : <p className="text-[var(--muted)] text-sm py-1">Sin registros aún.</p>}
 
             <ExerciseChart logs={logs} />
 
-            {/* Foto de referencia */}
             {ex.photo && (
               <div className="mt-3">
                 <div className="text-[0.72rem] text-[var(--muted)] uppercase tracking-wider mb-2">📸 Referencia</div>
-                <img src={ex.photo} alt="Referencia" className="w-full rounded-xl object-cover max-h-52 border border-[var(--border-color)]" />
+                <img src={ex.photo} alt="Ref" className="w-full rounded-xl object-cover max-h-40 border border-[var(--border-color)]" />
               </div>
             )}
-
-            {/* Técnica */}
             {ex.tecnica && (
               <div className="mt-3 bg-[var(--surface2)] border border-[var(--border-color)] rounded-xl p-3">
-                <div className="text-[0.72rem] text-[var(--muted)] uppercase tracking-wider mb-2">🤖 Técnica correcta</div>
+                <div className="text-[0.72rem] text-[var(--muted)] uppercase tracking-wider mb-2">🤖 Técnica</div>
                 <p className="text-xs text-[var(--text)] whitespace-pre-wrap leading-relaxed">{ex.tecnica}</p>
               </div>
             )}
 
-            {isFull && (
-              <div className="flex items-center gap-2 mt-3 p-2 rounded-lg text-xs text-[var(--hold)] border border-[rgba(255,215,0,0.2)] bg-[rgba(255,215,0,0.08)]">
-                ⚠ Límite de {MAX_LOGS} registros — el más antiguo se eliminará al guardar uno nuevo.
-              </div>
-            )}
-
-            <div className="grid gap-2 mt-3 pt-3 border-t border-dashed border-[var(--border-color)]"
-              style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(90px, 1fr))' }}>
-              <input className="input-field" placeholder="Peso (kg)" value={peso}   onChange={e => setPeso(e.target.value)} />
-              <input className="input-field" placeholder="Reps"       value={reps}   onChange={e => setReps(e.target.value)} />
-              <input className="input-field" placeholder="Segundos"   value={secs}   onChange={e => setSecs(e.target.value)} />
-              <input className="input-field" placeholder="Series"     value={series} onChange={e => setSeries(e.target.value)} />
-              <input className="input-field" placeholder="Tamaño"     value={tam}    onChange={e => setTam(e.target.value)} />
-              <input className="input-field" type="date"              value={fecha}  onChange={e => setFecha(e.target.value)} />
-              <button className="btn-accent text-sm py-2" onClick={addLog}>✓ Guardar</button>
+            {/* Extra mobile inputs */}
+            <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-dashed border-[var(--border-color)]">
+              <input className="input-field text-xs" placeholder="Segundos" value={secs}  onChange={e => setSecs(e.target.value)} />
+              <input className="input-field text-xs" placeholder="Tamaño"   value={tam}   onChange={e => setTam(e.target.value)} />
+              <input className="input-field text-xs" type="date"            value={fecha} onChange={e => setFecha(e.target.value)} />
             </div>
 
             <div className="flex gap-2 mt-3">
-              <button className="btn-outline text-xs py-1 px-3" onClick={() => setShowEdit(true)}>✏ Editar ejercicio</button>
-              <button className="btn-danger  text-xs py-1 px-3" onClick={deleteExercise}>🗑 Eliminar ejercicio</button>
-            </div>
-
-            {/* Timer de descanso */}
-            <div className="mt-3 pt-3 border-t border-dashed border-[var(--border-color)]">
-              {timerSecs === null ? (
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-[var(--muted)]">⏱ Descanso:</span>
-                  {[{s:60,l:'1m'},{s:90,l:'1:30'},{s:120,l:'2m'},{s:180,l:'3m'}].map(({s,l}) => (
-                    <button key={s} className="btn-outline text-xs py-1 px-3" onClick={() => startTimer(s)}>
-                      {l}
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <div className="flex items-center gap-3">
-                  {/* Barra de progreso */}
-                  <div className="flex-1 bg-[var(--surface)] rounded-full h-2 overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-all duration-1000"
-                      style={{
-                        width: `${(timerSecs / timerMax) * 100}%`,
-                        background: timerSecs <= 10 ? 'var(--down)' : timerSecs <= 30 ? 'var(--hold)' : 'var(--accent)'
-                      }}
-                    />
-                  </div>
-                  <span
-                    className="font-bebas text-xl w-16 text-right"
-                    style={{ color: timerSecs <= 10 ? 'var(--down)' : timerSecs <= 30 ? 'var(--hold)' : 'var(--accent)' }}
-                  >
-                    {timerSecs === 0 ? '¡Ya!' : timerSecs >= 60 ? `${Math.floor(timerSecs/60)}:${String(timerSecs%60).padStart(2,'0')}` : `${timerSecs}s`}
-                  </span>
-                  <button className="btn-danger text-xs py-1 px-2" onClick={stopTimer}>✕</button>
-                </div>
-              )}
+              <button className="btn-outline text-xs py-1 px-3" onClick={() => setShowEdit(true)}>✏ Editar</button>
+              <button className="btn-danger  text-xs py-1 px-3" onClick={deleteExercise}>🗑 Eliminar</button>
             </div>
           </div>
         )}
