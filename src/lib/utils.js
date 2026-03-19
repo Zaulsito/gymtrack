@@ -70,7 +70,13 @@ export function today() {
 
 export function formatDate(d) {
   if (!d) return '-'
-  return new Date(d + 'T12:00:00').toLocaleDateString('es-ES', { day:'numeric', month:'short', year:'numeric' })
+  try {
+    const date = new Date(d.includes('T') ? d : d + 'T12:00:00')
+    if (isNaN(date.getTime())) return '-'
+    return date.toLocaleDateString('es-ES', { day:'numeric', month:'short', year:'numeric' })
+  } catch {
+    return '-'
+  }
 }
 
 export function calcCondition(prevLogs, newPeso, newReps, newSecs) {
