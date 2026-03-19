@@ -425,7 +425,7 @@ export default function ExerciseCard({ ex, logs = [], onStartTimer }) {
               <div className="overflow-x-auto">
                 <table className="w-full text-xs min-w-[400px]" style={{ borderCollapse: 'collapse' }}>
                   <thead>
-                    <tr>{['#','Peso','Reps','Series','Fecha','Cond',''].map(h => (
+                    <tr>{['#','Peso','Reps','Segs','Series','Fecha','Cond',''].map(h => (
                       <th key={h} className="text-[var(--muted)] font-medium text-left py-1.5 px-2 border-b border-[var(--border-color)] uppercase text-[0.65rem] tracking-wider">{h}</th>
                     ))}</tr>
                   </thead>
@@ -435,6 +435,7 @@ export default function ExerciseCard({ ex, logs = [], onStartTimer }) {
                         <td className="py-1.5 px-2 text-[var(--muted)] text-[0.65rem]">{idx === logs.length - 1 ? '★' : idx + 1}</td>
                         <td className="py-1.5 px-2 font-bold">{l.peso || '-'}</td>
                         <td className="py-1.5 px-2">{l.reps || '-'}</td>
+                        <td className="py-1.5 px-2">{l.secs ? `${l.secs}s` : '-'}</td>
                         <td className="py-1.5 px-2">{l.series || '-'}</td>
                         <td className="py-1.5 px-2 text-[var(--muted)]">{formatDate(l.fecha)}</td>
                         <td className="py-1.5 px-2"><CondBadge cond={l.cond} /></td>
