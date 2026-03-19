@@ -27,6 +27,29 @@ export default function ExerciseList() {
   const dragIndex = useRef(null)
   const dragOver  = useRef(null)
 
+  // Recuperar timer si la app vuelve del segundo plano
+  useRef(() => {
+    const endTime = parseInt(localStorage.getItem('gymtrack_rest_end') || '0')
+    const maxSecs = parseInt(localStorage.getItem('gymtrack_rest_max') || '90')
+    const remaining = Math.round((endTime - Date.now()) / 1000)
+    if (remaining > 0) {
+      setRestMax(maxSecs)
+      setRestTimer(remaining)
+      restRef.current = setInterval(() => {
+        setRestTimer(() => {
+          const end = parseInt(localStorage.getItem('gymtrack_rest_end') || '0')
+          const rem = Math.max(0, Math.round((end - Date.now()) / 1000))
+          if (rem <= 0) {
+            clearInterval(restRef.current)
+            localStorage.removeItem('gymtrack_rest_end')
+            return 0
+          }
+          return rem
+        })
+      }, 500)
+    }
+  })
+
   if (!state) return null
 
   const logs       = myLogs()
@@ -62,25 +85,72 @@ export default function ExerciseList() {
   })
 
   // Rest timer
-  function startRestTimer(secs) {
+  async function requestNotificationPermission() {
+    if ('Notification' in window && Notification.permission === 'default') {
+      await Notification.requestPermission()
+    }
+  }
+
+  function playBeep() {
+    try {
+      const ctx  = new (window.AudioContext || window.webkitAudioContext)()
+      const osc  = ctx.createOscillator()
+      const gain = ctx.createGain()
+      osc.connect(gain)
+      gain.connect(ctx.destination)
+      osc.type = 'sine'
+      osc.frequency.setValueAtTime(880, ctx.currentTime)
+      osc.frequency.setValueAtTime(660, ctx.currentTime + 0.15)
+      osc.frequency.setValueAtTime(880, ctx.currentTime + 0.3)
+      gain.gain.setValueAtTime(0.4, ctx.currentTime)
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6)
+      osc.start()
+      osc.stop(ctx.currentTime + 0.6)
+    } catch {}
+  }
+
+  function sendToSW(type, data = {}) {
+    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+      navigator.serviceWorker.controller.postMessage({ type, ...data })
+    }
+  }
+
+  async function startRestTimer(secs) {
+    await requestNotificationPermission()
     clearInterval(restRef.current)
     setRestMax(secs)
     setRestTimer(secs)
+
+    // Guardar endTime para recuperar si la app vuelve del fondo
+    localStorage.setItem('gymtrack_rest_end', Date.now() + secs * 1000)
+    localStorage.setItem('gymtrack_rest_max', secs)
+
+    // Avisar al SW para notificación en segundo plano
+    sendToSW('START_REST_TIMER', { seconds: secs })
+
     restRef.current = setInterval(() => {
       setRestTimer(prev => {
-        if (prev <= 1) {
+        // Recalcular desde endTime real (por si app estuvo en fondo)
+        const endTime = parseInt(localStorage.getItem('gymtrack_rest_end') || '0')
+        const remaining = Math.max(0, Math.round((endTime - Date.now()) / 1000))
+
+        if (remaining <= 0) {
           clearInterval(restRef.current)
+          localStorage.removeItem('gymtrack_rest_end')
           if (navigator.vibrate) navigator.vibrate([300, 100, 300])
+          playBeep()
           return 0
         }
-        return prev - 1
+        return remaining
       })
-    }, 1000)
+    }, 500)
   }
 
   function stopRestTimer() {
     clearInterval(restRef.current)
     setRestTimer(null)
+    localStorage.removeItem('gymtrack_rest_end')
+    sendToSW('CANCEL_REST_TIMER')
   }
 
   const formatTime = s => s >= 60
