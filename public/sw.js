@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gymtrack-v3'
+const CACHE_NAME = 'gymtrack-v4'
 const urlsToCache = ['/', '/index.html']
 
 self.addEventListener('install', event => {
