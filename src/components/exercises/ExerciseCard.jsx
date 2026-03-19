@@ -149,6 +149,7 @@ export default function ExerciseCard({ ex, logs = [], onStartTimer }) {
   const { updateState, showToast, logsKey } = useApp()
   const [showHistory, setShowHistory] = useState(false)
   const [showEdit,    setShowEdit]    = useState(false)
+  const [repMode,    setRepMode]      = useState('reps') // 'reps' | 'secs'
   const [peso,   setPeso]   = useState('')
   const [reps,   setReps]   = useState('')
   const [series, setSeries] = useState('')
@@ -342,25 +343,68 @@ export default function ExerciseCard({ ex, logs = [], onStartTimer }) {
           >{showHistory ? '▲' : '▼'}</button>
         </div>
 
-        {/* Inputs mobile */}
-        <div className="px-4 pb-3 flex flex-col gap-3">
+        {/* Inputs mobile — siempre visibles */}
+        <div className="px-4 pb-3 flex flex-col gap-2">
+          {/* Fila 1: Peso, Reps/Segs (con toggle), Series */}
           <div className="grid grid-cols-3 gap-2">
-            {[
-              { label: '🏋 Peso KG', val: peso,   set: setPeso,   ph: lastLog?.peso   || '0', step: '0.5' },
-              { label: '↩ Reps',     val: reps,    set: setReps,   ph: lastLog?.reps   || '0' },
-              { label: '◈ Series',   val: series,  set: setSeries, ph: lastLog?.series || '0' },
-            ].map(({ label, val, set, ph, step }) => (
-              <div key={label} className="flex flex-col gap-1">
-                <label className="text-[9px] font-bold text-[var(--muted)] uppercase tracking-widest">{label}</label>
-                <input
-                  type="number" step={step}
-                  className="w-full bg-[var(--bg)] border border-[var(--border-color)] rounded-xl h-12 text-center text-accent font-bebas text-xl focus:outline-none focus:border-accent transition-colors"
-                  value={val}
-                  placeholder={ph}
-                  onChange={e => set(e.target.value)}
-                />
-              </div>
-            ))}
+            <div className="flex flex-col gap-1">
+              <label className="text-[9px] font-bold text-[var(--muted)] uppercase tracking-widest">🏋 Peso KG</label>
+              <input
+                type="number" step="0.5"
+                className="w-full bg-[var(--bg)] border border-[var(--border-color)] rounded-xl h-12 text-center text-accent font-bebas text-xl focus:outline-none focus:border-accent transition-colors"
+                value={peso} placeholder={lastLog?.peso || '0'}
+                onChange={e => setPeso(e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              {/* Toggle Reps / Segs */}
+              <button
+                className="text-[9px] font-bold uppercase tracking-widest flex items-center gap-1 self-start"
+                onClick={() => setRepMode(m => m === 'reps' ? 'secs' : 'reps')}
+              >
+                <span className={repMode === 'reps' ? 'text-accent' : 'text-[var(--muted)]'}>↩ Reps</span>
+                <span className="text-[var(--muted)]">/</span>
+                <span className={repMode === 'secs' ? 'text-accent' : 'text-[var(--muted)]'}>⏱ Segs</span>
+              </button>
+              <input
+                type="number"
+                className="w-full bg-[var(--bg)] border border-[var(--border-color)] rounded-xl h-12 text-center text-accent font-bebas text-xl focus:outline-none focus:border-accent transition-colors"
+                value={repMode === 'reps' ? reps : secs}
+                placeholder={repMode === 'reps' ? (lastLog?.reps || '0') : (lastLog?.secs || '0')}
+                onChange={e => repMode === 'reps' ? setReps(e.target.value) : setSecs(e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-[9px] font-bold text-[var(--muted)] uppercase tracking-widest">◈ Series</label>
+              <input
+                type="number"
+                className="w-full bg-[var(--bg)] border border-[var(--border-color)] rounded-xl h-12 text-center text-accent font-bebas text-xl focus:outline-none focus:border-accent transition-colors"
+                value={series} placeholder={lastLog?.series || '0'}
+                onChange={e => setSeries(e.target.value)}
+              />
+            </div>
+          </div>
+
+          {/* Fila 2: Tamaño y Fecha */}
+          <div className="grid grid-cols-2 gap-2">
+            <div className="flex flex-col gap-1">
+              <label className="text-[9px] font-bold text-[var(--muted)] uppercase tracking-widest">📐 Tamaño</label>
+              <input
+                className="input-field text-sm py-2"
+                placeholder={lastLog?.tam || 'Ej: Grande'}
+                value={tam}
+                onChange={e => setTam(e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-[9px] font-bold text-[var(--muted)] uppercase tracking-widest">📅 Fecha</label>
+              <input
+                className="input-field text-sm py-2"
+                type="date"
+                value={fecha}
+                onChange={e => setFecha(e.target.value)}
+              />
+            </div>
           </div>
 
           <button
@@ -416,13 +460,6 @@ export default function ExerciseCard({ ex, logs = [], onStartTimer }) {
                 <p className="text-xs text-[var(--text)] whitespace-pre-wrap leading-relaxed">{ex.tecnica}</p>
               </div>
             )}
-
-            {/* Extra mobile inputs */}
-            <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-dashed border-[var(--border-color)]">
-              <input className="input-field text-xs" placeholder="Segundos" value={secs}  onChange={e => setSecs(e.target.value)} />
-              <input className="input-field text-xs" placeholder="Tamaño"   value={tam}   onChange={e => setTam(e.target.value)} />
-              <input className="input-field text-xs" type="date"            value={fecha} onChange={e => setFecha(e.target.value)} />
-            </div>
 
             <div className="flex gap-2 mt-3">
               <button className="btn-outline text-xs py-1 px-3" onClick={() => setShowEdit(true)}>✏ Editar</button>
