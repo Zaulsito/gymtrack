@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useApp } from '../../context/AppContext'
 import ExerciseCard from './ExerciseCard'
 import AddExerciseModal from '../modals/AddExerciseModal'
@@ -20,7 +20,14 @@ export default function ExerciseList() {
   const { state, updateState, myLogs } = useApp()
   const [search,    setSearch]    = useState('')
   const [showModal, setShowModal] = useState(false)
-  const [condFilter, setCondFilter] = useState(null) // 'SUBE' | 'BAJA' | 'MANTIENE' | null
+  const [condFilter, setCondFilter] = useState(null)
+  const [notifPerm, setNotifPerm] = useState(() =>
+    'Notification' in window ? Notification.permission : 'unsupported'
+  )
+
+  useEffect(() => {
+    if ('Notification' in window) setNotifPerm(Notification.permission)
+  }, [])
   const [restTimer, setRestTimer] = useState(null)  // seconds remaining
   const [restMax,   setRestMax]   = useState(90)
   const restRef = useRef(null)
@@ -86,9 +93,11 @@ export default function ExerciseList() {
 
   // Rest timer
   async function requestNotificationPermission() {
-    if ('Notification' in window && Notification.permission === 'default') {
-      await Notification.requestPermission()
-    }
+    if (!('Notification' in window)) return
+    if (Notification.permission === 'granted') return
+    const result = await Notification.requestPermission()
+    setNotifPerm(result)
+    return result
   }
 
   function playBeep() {
@@ -411,6 +420,25 @@ export default function ExerciseList() {
           )}
         </div>
       </div>
+
+      {/* Banner permiso notificaciones */}
+      {notifPerm !== 'granted' && notifPerm !== 'unsupported' && (
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-md bg-[var(--surface)] border border-accent/40 rounded-2xl px-4 py-3 shadow-2xl flex items-center gap-3">
+          <span className="text-xl">🔔</span>
+          <div className="flex-1">
+            <p className="text-xs font-bold text-[var(--text)]">Activar notificaciones</p>
+            <p className="text-[10px] text-[var(--muted)]">Para recibir la alarma del timer en segundo plano</p>
+          </div>
+          <button
+            className="btn-accent text-xs py-1.5 px-3 shrink-0"
+            onClick={async () => {
+              const result = await requestNotificationPermission()
+              if (result === 'granted') setNotifPerm('granted')
+            }}
+          >Activar</button>
+          <button className="text-[var(--muted)] text-xs" onClick={() => setNotifPerm('denied')}>✕</button>
+        </div>
+      )}
 
       {/* FAB mobile */}
       <button
