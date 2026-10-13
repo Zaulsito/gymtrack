@@ -24,6 +24,14 @@ export default function ExerciseList() {
   const [notifPerm, setNotifPerm] = useState(() =>
     'Notification' in window ? Notification.permission : 'unsupported'
   )
+  const [dismissedNotifBanner, setDismissedNotifBanner] = useState(() => {
+    return sessionStorage.getItem('gymtrack_dismiss_notif_banner') === '1'
+  })
+
+  function dismissNotifBanner() {
+    setDismissedNotifBanner(true)
+    sessionStorage.setItem('gymtrack_dismiss_notif_banner', '1')
+  }
 
   useEffect(() => {
     if ('Notification' in window) setNotifPerm(Notification.permission)
@@ -422,7 +430,7 @@ export default function ExerciseList() {
       </div>
 
       {/* Banner permiso notificaciones */}
-      {notifPerm !== 'granted' && notifPerm !== 'unsupported' && (
+      {!dismissedNotifBanner && notifPerm === 'default' && (
         <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-md bg-[var(--surface)] border border-accent/40 rounded-2xl px-4 py-3 shadow-2xl flex items-center gap-3">
           <span className="text-xl">🔔</span>
           <div className="flex-1">
@@ -436,7 +444,12 @@ export default function ExerciseList() {
               if (result === 'granted') setNotifPerm('granted')
             }}
           >Activar</button>
-          <button className="text-[var(--muted)] text-xs" onClick={() => setNotifPerm('denied')}>✕</button>
+          <button
+            className="text-[var(--muted)] hover:text-[var(--text)] p-2 -mr-1 text-base leading-none transition-colors cursor-pointer"
+            onClick={dismissNotifBanner}
+            title="Cerrar"
+            aria-label="Cerrar"
+          >✕</button>
         </div>
       )}
 

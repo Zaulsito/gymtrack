@@ -229,106 +229,347 @@ function CustomRoutineEditor({ routine, exercises, onSave, onCancel }) {
 
   const filteredEx = exercises.filter(e => e.name.toLowerCase().includes(search.toLowerCase()))
 
+  const activeDayIdx = showExPicker !== null ? showExPicker : 0
+  const [selectedDay, setSelectedDay] = useState(0)
+
+  const currentDay = days[selectedDay]
+  const totalExercises = days.reduce((acc, d) => acc + d.exercises.length, 0)
+
   return (
-    <div className="profile-screen">
+    <div className="profile-screen bg-[var(--bg)]">
+
+      {/* ── Header ── */}
       <div className="sticky top-0 z-[290] bg-[var(--bg)] border-b border-[var(--border-color)] px-4 py-3 flex items-center gap-3">
         <button className="text-[var(--muted)] hover:text-[var(--text)] text-xl w-8" onClick={onCancel}>←</button>
         <h1 className="font-bebas text-xl tracking-widest text-accent flex-1">{isEdit ? 'EDITAR RUTINA' : 'NUEVA RUTINA'}</h1>
-        <button className="btn-accent text-xs py-1.5 px-4" onClick={handleSave} disabled={!name.trim() || days.length === 0}>
+        <button className="btn-accent text-xs py-1.5 px-5 rounded-full font-semibold" onClick={handleSave} disabled={!name.trim() || days.length === 0}>
           Guardar
         </button>
       </div>
 
-      <div className="p-4 max-w-[500px] mx-auto flex flex-col gap-4 pb-10">
-        <div>
-          <label className="section-title block mb-2">Nombre de la rutina</label>
-          <input className="input-field" placeholder="Ej: Mi rutina semanal..." value={name} onChange={e => setName(e.target.value)} />
+      {/* ── DESKTOP layout ── */}
+      <div className="hidden md:block p-6 max-w-5xl mx-auto">
+        <div className="grid grid-cols-12 gap-6 mb-6">
+
+          {/* Left: name + days */}
+          <div className="col-span-8 bg-[var(--surface)] border border-[var(--border-color)] rounded-xl p-6 space-y-5">
+            <div>
+              <label className="text-[10px] text-[var(--muted)] uppercase tracking-widest block mb-2">Nombre de la Rutina</label>
+              <input className="w-full bg-[var(--surface2)] border border-[var(--border-color)] rounded-lg px-4 py-3 text-lg font-bebas tracking-wider text-[var(--text)] focus:outline-none focus:border-accent"
+                placeholder="Ej: Push Day - Hipertrofia" value={name} onChange={e => setName(e.target.value)} />
+            </div>
+            <div>
+              <label className="text-[10px] text-[var(--muted)] uppercase tracking-widest block mb-3">Días de entrenamiento</label>
+              <div className="flex flex-wrap gap-2">
+                {DAYS_OF_WEEK.map((day, i) => {
+                  const hasDay = days.find(d => d.day === day)
+                  return (
+                    <button key={day}
+                      className={`px-4 py-1.5 rounded-full text-xs font-semibold border transition-all ${hasDay ? 'border-accent bg-accent/10 text-accent' : 'border-[var(--border-color)] text-[var(--muted)] hover:border-accent/50'}`}
+                      onClick={() => {
+                        if (hasDay) {
+                          const idx = days.findIndex(d => d.day === day)
+                          if (days.length > 1) removeDay(idx)
+                        } else {
+                          setDays(prev => [...prev, { day, exercises: [] }])
+                          setSelectedDay(days.length)
+                        }
+                      }}>
+                      {day}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* Right: summary */}
+          <div className="col-span-4 bg-[var(--surface)] border border-[var(--border-color)] rounded-xl p-6 flex flex-col justify-between">
+            <div>
+              <p className="text-[10px] text-[var(--muted)] uppercase tracking-widest mb-1">Resumen</p>
+              <p className="font-bebas text-3xl text-accent tracking-wider">{totalExercises} Ejercicios</p>
+            </div>
+            <div className="space-y-3">
+              <div className="flex justify-between text-sm">
+                <span className="text-[var(--muted)]">Días configurados</span>
+                <span className="font-semibold text-[var(--text)]">{days.length}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-[var(--muted)]">Día activo</span>
+                <span className="font-semibold text-accent">{currentDay?.day || '—'}</span>
+              </div>
+              <div className="w-full h-1.5 bg-[var(--surface2)] rounded-full overflow-hidden">
+                <div className="h-full bg-accent rounded-full transition-all" style={{ width: `${Math.min((totalExercises / 20) * 100, 100)}%` }} />
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div>
-          <label className="section-title block mb-2">Días y ejercicios</label>
-          <div className="flex flex-col gap-3">
-            {days.map((d, dayIdx) => (
-              <div key={dayIdx} className="bg-[var(--surface)] border border-[var(--border-color)] rounded-xl overflow-hidden">
-                <div className="flex items-center gap-2 px-3 py-2 border-b border-[var(--border-color)] bg-[var(--surface2)]">
-                  <select className="input-field py-1 text-sm font-semibold flex-1" value={d.day} onChange={e => updateDayName(dayIdx, e.target.value)}>
-                    {DAYS_OF_WEEK.map(day => <option key={day} value={day}>{day}</option>)}
-                  </select>
-                  <button className="text-[var(--down)] text-sm px-2" onClick={() => removeDay(dayIdx)}>✕</button>
-                </div>
+        {/* Day tabs + exercise table */}
+        <div className="bg-[var(--surface)] border border-[var(--border-color)] rounded-xl overflow-hidden">
 
-                <div className="px-3 py-2 flex flex-col gap-1">
-                  {d.exercises.length === 0 && <p className="text-xs text-[var(--muted)] py-1">Sin ejercicios aún</p>}
-                  {d.exercises.map((ex, exIdx) => {
-                    const exName = typeof ex === 'string' ? ex : ex.name
-                    const exInfo = typeof ex === 'object' ? ex : {}
-                    const tags = [
-                      exInfo.series && `${exInfo.series} series`,
-                      exInfo.reps   && `${exInfo.reps} reps`,
-                      exInfo.peso   && `${exInfo.peso} kg`,
-                      exInfo.secs   && `${exInfo.secs} seg`,
-                    ].filter(Boolean).join(' · ')
-                    return (
-                      <div key={exIdx} className="flex items-start gap-2 py-1.5 border-b border-[var(--border-color)] last:border-0">
-                        <span className="text-accent text-xs w-5 mt-0.5 shrink-0">{exIdx + 1}.</span>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-[var(--text)] truncate">{exName}</p>
-                          {tags && <p className="text-xs text-[var(--muted)]">{tags}</p>}
-                        </div>
-                        <button className="text-[var(--muted)] hover:text-[var(--down)] text-xs shrink-0" onClick={() => removeEx(dayIdx, exIdx)}>✕</button>
-                      </div>
-                    )
-                  })}
-
-                  {/* Form de peso/series pendiente */}
-                  {pendingEx?.dayIdx === dayIdx && (
-                    <ExLogForm
-                      exName={pendingEx.name}
-                      onConfirm={(exObj) => confirmAddEx(dayIdx, exObj)}
-                      onCancel={() => { setPendingEx(null); setManualInput('') }}
-                    />
-                  )}
-
-                  {showExPicker === dayIdx && !pendingEx ? (
-                    <div className="mt-2 border border-[var(--border-color)] rounded-lg overflow-hidden">
-                      <div className="p-2 bg-[var(--surface2)] border-b border-[var(--border-color)]">
-                        <input className="input-field text-xs py-1" placeholder="🔍 Buscar en mis ejercicios..." value={search} onChange={e => setSearch(e.target.value)} autoFocus />
-                      </div>
-                      {filteredEx.length > 0 && (
-                        <div className="max-h-36 overflow-y-auto">
-                          {filteredEx.map(ex => (
-                            <button key={ex.id} className="w-full text-left px-3 py-2 text-sm hover:bg-[var(--surface2)] border-b border-[var(--border-color)] last:border-0 flex items-center gap-2"
-                              onClick={() => startAddEx(dayIdx, ex.name)}>
-                              <span className="text-accent text-xs">+</span>
-                              <span className="flex-1">{ex.name}</span>
-                              <span className="text-[var(--muted)] text-xs">{ex.cat}</span>
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                      {filteredEx.length === 0 && search && (
-                        <div className="px-3 py-2 text-xs text-[var(--muted)]">Sin resultados en tu lista</div>
-                      )}
-                      <div className="flex gap-2 p-2 bg-[var(--surface2)] border-t border-[var(--border-color)]">
-                        <input className="input-field text-xs py-1 flex-1" placeholder="O escribe uno manualmente..." value={manualInput}
-                          onChange={e => setManualInput(e.target.value)}
-                          onKeyDown={e => { if (e.key === 'Enter' && manualInput.trim()) startAddEx(dayIdx, manualInput) }} />
-                        <button className="btn-accent text-xs px-3 py-1" onClick={() => { if (manualInput.trim()) startAddEx(dayIdx, manualInput) }}>＋</button>
-                      </div>
-                      <button className="w-full py-2 text-xs text-[var(--muted)] hover:text-[var(--text)] bg-[var(--surface2)]"
-                        onClick={() => { setShowExPicker(null); setSearch(''); setManualInput('') }}>Cerrar</button>
-                    </div>
-                  ) : !pendingEx && (
-                    <button className="mt-1 w-full py-1.5 text-xs text-accent border border-dashed border-accent rounded-lg hover:opacity-80 transition-opacity"
-                      onClick={() => { setShowExPicker(dayIdx); setSearch('') }}>
-                      ＋ Agregar ejercicio
-                    </button>
-                  )}
-                </div>
-              </div>
+          {/* Day tabs */}
+          <div className="flex border-b border-[var(--border-color)] bg-[var(--surface2)]">
+            {days.map((d, i) => (
+              <button key={i}
+                className={`px-5 py-3 text-sm font-semibold transition-colors border-b-2 ${selectedDay === i ? 'border-accent text-accent' : 'border-transparent text-[var(--muted)] hover:text-[var(--text)]'}`}
+                onClick={() => setSelectedDay(i)}>
+                {d.day}
+              </button>
             ))}
           </div>
-          <button className="btn-outline w-full mt-3 text-sm" onClick={addDay} disabled={days.length >= 7}>＋ Agregar día</button>
+
+          {/* Table */}
+          {currentDay && (
+            <table className="w-full">
+              <thead>
+                <tr className="text-left bg-[var(--surface2)]/50">
+                  {['Ejercicio','Peso (kg)','Reps','Series','Descanso',''].map(h => (
+                    <th key={h} className="px-5 py-3 text-[10px] uppercase tracking-widest text-[var(--muted)] font-semibold">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[var(--border-color)]">
+                {currentDay.exercises.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="px-5 py-8 text-center text-sm text-[var(--muted)]">Sin ejercicios — agrega uno abajo</td>
+                  </tr>
+                )}
+                {currentDay.exercises.map((ex, exIdx) => {
+                  const exName = typeof ex === 'string' ? ex : ex.name
+                  const exInfo = typeof ex === 'object' ? ex : {}
+                  return (
+                    <tr key={exIdx} className="hover:bg-[var(--surface2)]/30 transition-colors group">
+                      <td className="px-5 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-lg bg-[var(--surface2)] flex items-center justify-center text-accent font-bebas text-sm">{exIdx + 1}</div>
+                          <div>
+                            <p className="font-semibold text-sm text-[var(--text)]">{exName}</p>
+                            {exInfo.cat && <p className="text-xs text-[var(--muted)]">{exInfo.cat}</p>}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-5 py-4">
+                        <input className="w-20 bg-[var(--surface2)] border border-[var(--border-color)] rounded px-2 py-1.5 text-sm text-center focus:outline-none focus:border-accent"
+                          value={exInfo.peso || ''} onChange={e => {
+                            const updated = { ...exInfo, peso: e.target.value }
+                            setDays(prev => prev.map((d, i) => i !== selectedDay ? d : { ...d, exercises: d.exercises.map((ex2, j) => j !== exIdx ? ex2 : updated) }))
+                          }} />
+                      </td>
+                      <td className="px-5 py-4">
+                        <input className="w-20 bg-[var(--surface2)] border border-[var(--border-color)] rounded px-2 py-1.5 text-sm text-center focus:outline-none focus:border-accent"
+                          value={exInfo.reps || ''} onChange={e => {
+                            const updated = { ...exInfo, reps: e.target.value }
+                            setDays(prev => prev.map((d, i) => i !== selectedDay ? d : { ...d, exercises: d.exercises.map((ex2, j) => j !== exIdx ? ex2 : updated) }))
+                          }} />
+                      </td>
+                      <td className="px-5 py-4">
+                        <input className="w-20 bg-[var(--surface2)] border border-[var(--border-color)] rounded px-2 py-1.5 text-sm text-center focus:outline-none focus:border-accent"
+                          value={exInfo.series || ''} onChange={e => {
+                            const updated = { ...exInfo, series: e.target.value }
+                            setDays(prev => prev.map((d, i) => i !== selectedDay ? d : { ...d, exercises: d.exercises.map((ex2, j) => j !== exIdx ? ex2 : updated) }))
+                          }} />
+                      </td>
+                      <td className="px-5 py-4">
+                        <input className="w-20 bg-[var(--surface2)] border border-[var(--border-color)] rounded px-2 py-1.5 text-sm text-center focus:outline-none focus:border-accent"
+                          placeholder="90s" value={exInfo.secs || ''} onChange={e => {
+                            const updated = { ...exInfo, secs: e.target.value }
+                            setDays(prev => prev.map((d, i) => i !== selectedDay ? d : { ...d, exercises: d.exercises.map((ex2, j) => j !== exIdx ? ex2 : updated) }))
+                          }} />
+                      </td>
+                      <td className="px-5 py-4">
+                        <button className="text-[var(--muted)] hover:text-[var(--down)] transition-colors" onClick={() => removeEx(selectedDay, exIdx)}>🗑</button>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          )}
+
+          {/* Add exercise row */}
+          {currentDay && (
+            <div className="border-t border-[var(--border-color)] p-4">
+              {showExPicker === selectedDay && !pendingEx ? (
+                <div className="flex gap-3 items-center">
+                  <input className="input-field flex-1 text-sm" placeholder="🔍 Buscar en mis ejercicios..." value={search} onChange={e => setSearch(e.target.value)} autoFocus />
+                  {search && filteredEx.length > 0 && (
+                    <div className="absolute mt-10 bg-[var(--surface)] border border-[var(--border-color)] rounded-xl shadow-xl z-50 max-h-48 overflow-y-auto w-64">
+                      {filteredEx.map(ex => (
+                        <button key={ex.id} className="w-full text-left px-4 py-2.5 text-sm hover:bg-[var(--surface2)] flex items-center gap-2 border-b border-[var(--border-color)] last:border-0"
+                          onClick={() => startAddEx(selectedDay, ex.name)}>
+                          <span className="text-accent text-xs">+</span>
+                          <span className="flex-1">{ex.name}</span>
+                          <span className="text-[var(--muted)] text-xs">{ex.cat}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  <input className="input-field w-48 text-sm" placeholder="O escribe manualmente..." value={manualInput} onChange={e => setManualInput(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter' && manualInput.trim()) startAddEx(selectedDay, manualInput) }} />
+                  <button className="btn-accent text-xs px-4 py-2" onClick={() => { if (manualInput.trim()) startAddEx(selectedDay, manualInput) }}>＋ Agregar</button>
+                  <button className="text-[var(--muted)] text-xs" onClick={() => { setShowExPicker(null); setSearch(''); setManualInput('') }}>✕</button>
+                </div>
+              ) : pendingEx?.dayIdx === selectedDay ? (
+                <ExLogForm exName={pendingEx.name} onConfirm={(exObj) => confirmAddEx(selectedDay, exObj)} onCancel={() => { setPendingEx(null); setManualInput('') }} />
+              ) : (
+                <button className="flex items-center gap-2 text-accent text-sm font-semibold hover:opacity-80 transition-opacity"
+                  onClick={() => { setShowExPicker(selectedDay); setSearch('') }}>
+                  ＋ Añadir ejercicio
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── MOBILE layout ── */}
+      <div className="md:hidden pb-32">
+
+        {/* Nombre */}
+        <div className="px-4 pt-4 pb-2">
+          <label className="text-[10px] text-[var(--muted)] uppercase tracking-widest block mb-1">Routine Identity</label>
+          <input className="w-full bg-[var(--surface)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-base font-bebas tracking-wider text-[var(--text)] focus:outline-none focus:border-accent"
+            placeholder="Nombre de la rutina" value={name} onChange={e => setName(e.target.value)} />
+        </div>
+
+        {/* Day pills */}
+        <div className="px-4 pb-4 pt-2">
+          <label className="text-[10px] text-[var(--muted)] uppercase tracking-widest block mb-2">Schedule Focus</label>
+          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+            {DAYS_OF_WEEK.map((day, i) => {
+              const dayIdx = days.findIndex(d => d.day === day)
+              const hasDay = dayIdx !== -1
+              const isSelected = hasDay && selectedDay === dayIdx
+              return (
+                <button key={day}
+                  className={`flex-shrink-0 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${isSelected ? 'bg-accent/20 text-accent border border-accent' : hasDay ? 'bg-[var(--surface)] border border-accent/30 text-accent' : 'bg-[var(--surface)] border border-[var(--border-color)] text-[var(--muted)]'}`}
+                  onClick={() => {
+                    if (hasDay) {
+                      setSelectedDay(dayIdx)
+                    } else {
+                      const newIdx = days.length
+                      setDays(prev => [...prev, { day, exercises: [] }])
+                      setSelectedDay(newIdx)
+                    }
+                  }}>
+                  {day.slice(0, 3)}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Exercises for selected day */}
+        <div className="px-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="font-bebas text-lg tracking-widest text-[var(--text)]">
+              Exercises {days[selectedDay]?.day && `— ${days[selectedDay].day}`}
+            </h2>
+            {totalExercises > 0 && (
+              <span className="text-[10px] bg-accent/10 text-accent border border-accent/20 px-3 py-1 rounded-full uppercase tracking-widest">
+                {totalExercises} Added
+              </span>
+            )}
+          </div>
+
+          {/* Exercise cards */}
+          {days[selectedDay]?.exercises.map((ex, exIdx) => {
+            const exName = typeof ex === 'string' ? ex : ex.name
+            const exInfo = typeof ex === 'object' ? ex : {}
+            const colors = ['border-accent', 'border-[var(--accent2)]', 'border-[var(--up)]', 'border-[var(--hold)]']
+            const borderColor = colors[exIdx % colors.length]
+            return (
+              <div key={exIdx} className={`bg-[var(--surface)] border border-[var(--border-color)] rounded-2xl p-4 relative overflow-hidden`}>
+                <div className={`absolute top-0 left-0 w-1 h-full bg-accent rounded-l-2xl`} />
+                <div className="flex items-start justify-between mb-4 pl-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-[var(--surface2)] flex items-center justify-center text-accent font-bebas">{exIdx + 1}</div>
+                    <div>
+                      <h3 className="font-bebas text-base tracking-wider text-[var(--text)]">{exName}</h3>
+                      {exInfo.cat && <p className="text-[10px] text-[var(--muted)] uppercase tracking-wider">{exInfo.cat}</p>}
+                    </div>
+                  </div>
+                  <button className="text-[var(--muted)] hover:text-[var(--down)] transition-colors p-1" onClick={() => removeEx(selectedDay, exIdx)}>🗑</button>
+                </div>
+
+                <div className="grid grid-cols-4 gap-2 pl-3">
+                  {[
+                    { label: 'Weight', key: 'peso', placeholder: '—' },
+                    { label: 'Reps',   key: 'reps', placeholder: '—' },
+                    { label: 'Sets',   key: 'series', placeholder: '—' },
+                    { label: 'Rest',   key: 'secs', placeholder: '90s' },
+                  ].map(({ label, key, placeholder }) => (
+                    <div key={key} className="space-y-1">
+                      <label className="text-[9px] text-[var(--muted)] uppercase tracking-widest text-center block">{label}</label>
+                      <input
+                        className="w-full bg-[var(--surface2)] border border-[var(--border-color)] rounded-lg py-2 text-center font-bebas text-sm text-[var(--text)] focus:outline-none focus:border-accent"
+                        placeholder={placeholder}
+                        value={exInfo[key] || ''}
+                        onChange={e => {
+                          const updated = { ...exInfo, [key]: e.target.value }
+                          setDays(prev => prev.map((d, i) => i !== selectedDay ? d : {
+                            ...d, exercises: d.exercises.map((ex2, j) => j !== exIdx ? ex2 : updated)
+                          }))
+                        }}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )
+          })}
+
+          {/* Pending form */}
+          {pendingEx?.dayIdx === selectedDay && (
+            <ExLogForm exName={pendingEx.name} onConfirm={(exObj) => confirmAddEx(selectedDay, exObj)} onCancel={() => { setPendingEx(null); setManualInput('') }} />
+          )}
+
+          {/* Picker */}
+          {showExPicker === selectedDay && !pendingEx && (
+            <div className="border border-[var(--border-color)] rounded-xl overflow-hidden">
+              <div className="p-3 bg-[var(--surface2)] border-b border-[var(--border-color)]">
+                <input className="input-field text-sm" placeholder="🔍 Buscar en mis ejercicios..." value={search} onChange={e => setSearch(e.target.value)} autoFocus />
+              </div>
+              {filteredEx.length > 0 && (
+                <div className="max-h-40 overflow-y-auto">
+                  {filteredEx.map(ex => (
+                    <button key={ex.id} className="w-full text-left px-4 py-3 text-sm hover:bg-[var(--surface2)] border-b border-[var(--border-color)] last:border-0 flex items-center gap-2"
+                      onClick={() => startAddEx(selectedDay, ex.name)}>
+                      <span className="text-accent text-xs">+</span>
+                      <span className="flex-1">{ex.name}</span>
+                      <span className="text-[var(--muted)] text-xs">{ex.cat}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+              {filteredEx.length === 0 && search && <p className="px-4 py-3 text-xs text-[var(--muted)]">Sin resultados</p>}
+              <div className="flex gap-2 p-3 bg-[var(--surface2)] border-t border-[var(--border-color)]">
+                <input className="input-field text-sm flex-1" placeholder="O escribe uno manualmente..." value={manualInput}
+                  onChange={e => setManualInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter' && manualInput.trim()) startAddEx(selectedDay, manualInput) }} />
+                <button className="btn-accent text-xs px-3 py-2" onClick={() => { if (manualInput.trim()) startAddEx(selectedDay, manualInput) }}>＋</button>
+              </div>
+              <button className="w-full py-2.5 text-xs text-[var(--muted)] bg-[var(--surface2)]" onClick={() => { setShowExPicker(null); setSearch(''); setManualInput('') }}>Cerrar</button>
+            </div>
+          )}
+
+          {/* Add exercise button */}
+          {!pendingEx && showExPicker !== selectedDay && days[selectedDay] && (
+            <button className="w-full py-5 rounded-2xl border-2 border-dashed border-[var(--border-color)] hover:border-accent text-[var(--muted)] hover:text-accent transition-all flex flex-col items-center gap-2 group"
+              onClick={() => { setShowExPicker(selectedDay); setSearch('') }}>
+              <div className="w-9 h-9 rounded-full bg-accent/10 flex items-center justify-center group-hover:scale-110 transition-transform text-accent text-lg">＋</div>
+              <span className="font-bebas text-xs tracking-widest uppercase">Agregar ejercicio</span>
+            </button>
+          )}
+
+          {/* Remove day */}
+          {days.length > 1 && days[selectedDay] && (
+            <button className="w-full py-2 text-xs text-[var(--down)] border border-[rgba(255,51,102,0.2)] rounded-xl hover:bg-[rgba(255,51,102,0.05)] transition-colors"
+              onClick={() => { removeDay(selectedDay); setSelectedDay(Math.max(0, selectedDay - 1)) }}>
+              🗑 Eliminar {days[selectedDay].day}
+            </button>
+          )}
         </div>
       </div>
     </div>
