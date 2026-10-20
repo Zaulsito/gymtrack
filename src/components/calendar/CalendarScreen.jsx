@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { useApp } from '../../context/AppContext'
-import { today } from '../../lib/utils'
+import { today, formatDate } from '../../lib/utils'
 
 const MONTHS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
-const DAYS   = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb']
+const DAYS   = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom']
 
 export default function CalendarScreen({ onClose }) {
   const { state, updateState, showToast } = useApp()
@@ -15,7 +15,8 @@ export default function CalendarScreen({ onClose }) {
 
   const td        = state?.trainedDays || {}
   const todayStr  = today()
-  const firstDay  = new Date(year, month, 1).getDay()
+  const rawFirstDay = new Date(year, month, 1).getDay()
+  const firstDay  = (rawFirstDay + 6) % 7
   const daysInMonth = new Date(year, month + 1, 0).getDate()
   const monthPrefix = `${year}-${String(month+1).padStart(2,'0')}`
   const trainedCount = Object.keys(td).filter(k => k.startsWith(monthPrefix)).length
@@ -23,13 +24,30 @@ export default function CalendarScreen({ onClose }) {
   function prevMonth() { if (month === 0) { setMonth(11); setYear(y => y-1) } else setMonth(m => m-1) }
   function nextMonth() { if (month === 11) { setMonth(0);  setYear(y => y+1) } else setMonth(m => m+1) }
 
-  function markToday() {
-    if (!td[todayStr]) {
-      updateState(prev => ({ ...prev, trainedDays: { ...prev.trainedDays, [todayStr]: { note: '' } } }))
-      showToast('✓ Día marcado como entrenado 💪', 'ok')
+  function toggleDayTrained(dateStr) {
+    if (!dateStr) return
+    const isTrained = !!td[dateStr]
+    if (isTrained) {
+      updateState(prev => {
+        const trainedDays = { ...prev.trainedDays }
+        delete trainedDays[dateStr]
+        return { ...prev, trainedDays }
+      })
+      showToast(`Día ${formatDate(dateStr)} desmarcado`, '')
     } else {
-      showToast('Ya marcaste hoy como entrenado', '')
+      updateState(prev => ({
+        ...prev,
+        trainedDays: {
+          ...prev.trainedDays,
+          [dateStr]: { note: (selectedDate === dateStr ? noteText : '') || td[dateStr]?.note || '' }
+        }
+      }))
+      showToast(`✓ Día ${formatDate(dateStr)} marcado como entrenado 💪`, 'ok')
     }
+  }
+
+  function markToday() {
+    toggleDayTrained(todayStr)
   }
 
   function clickDay(dateStr) {
@@ -38,33 +56,56 @@ export default function CalendarScreen({ onClose }) {
   }
 
   function saveNote() {
+    if (!selectedDate) return
     updateState(prev => {
       const trainedDays = { ...prev.trainedDays }
       if (!trainedDays[selectedDate]) trainedDays[selectedDate] = { note: '' }
       trainedDays[selectedDate] = { ...trainedDays[selectedDate], note: noteText }
       return { ...prev, trainedDays }
     })
-    setSelectedDate(null)
     showToast('✓ Nota guardada', 'ok')
   }
 
   function unmarkDay() {
-    if (!confirm(`¿Anular el día ${selectedDate}?`)) return
+    if (!selectedDate) return
+    if (!confirm(`¿Anular el día ${formatDate(selectedDate)}?`)) return
     updateState(prev => {
       const trainedDays = { ...prev.trainedDays }
       delete trainedDays[selectedDate]
       return { ...prev, trainedDays }
     })
-    setSelectedDate(null)
     showToast('✓ Día anulado', '')
   }
 
   return (
     <div className="profile-screen">
       <div className="bg-[var(--surface)] border-b border-[var(--border-color)] px-6 py-4 flex items-center gap-4 sticky top-0 z-[290]">
-        <button className="text-accent text-xl" onClick={onClose}>←</button>
+        <button className="text-accent text-xl cursor-pointer" onClick={onClose}>←</button>
         <div className="font-bebas text-[1.4rem] tracking-widest">Calendario</div>
-        <button className="btn-accent ml-auto text-sm py-1.5 px-4" onClick={markToday}>✓ Entrené hoy</button>
+        <div className="ml-auto flex items-center gap-2">
+          {selectedDate && selectedDate !== todayStr && (
+            <button
+              className={`text-xs md:text-sm py-1.5 px-3 rounded-lg font-semibold transition-all cursor-pointer ${
+                td[selectedDate]
+                  ? 'bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30'
+                  : 'bg-accent text-black hover:opacity-90 shadow-[0_0_10px_rgba(200,255,0,0.3)]'
+              }`}
+              onClick={() => toggleDayTrained(selectedDate)}
+            >
+              {td[selectedDate] ? `✕ Desmarcar día (${selectedDate.slice(8)})` : `✓ Marcar día (${selectedDate.slice(8)})`}
+            </button>
+          )}
+          <button
+            className={`text-xs md:text-sm py-1.5 px-3 md:px-4 rounded-lg font-semibold transition-all cursor-pointer ${
+              td[todayStr]
+                ? 'bg-[var(--surface2)] text-[var(--muted)] border border-[var(--border-color)]'
+                : 'btn-accent'
+            }`}
+            onClick={markToday}
+          >
+            {td[todayStr] ? '✓ Hoy entrenado' : '✓ Entrené hoy'}
+          </button>
+        </div>
       </div>
 
       <div className="p-6 max-w-[500px] mx-auto">
@@ -88,13 +129,14 @@ export default function CalendarScreen({ onClose }) {
             const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`
             const trained = !!td[dateStr]
             const isToday = dateStr === todayStr
+            const isSelected = dateStr === selectedDate
             const hasNote = trained && !!td[dateStr]?.note
             return (
               <div
                 key={d}
-                className={`cal-day ${trained ? 'trained' : ''} ${isToday ? 'today' : ''} ${hasNote ? 'has-note' : ''}`}
+                className={`cal-day ${trained ? 'trained' : ''} ${isToday ? 'today' : ''} ${isSelected ? 'selected' : ''} ${hasNote ? 'has-note' : ''}`}
                 onClick={() => clickDay(dateStr)}
-                title={hasNote ? td[dateStr].note : ''}
+                title={hasNote ? td[dateStr].note : (trained ? 'Entrenado' : 'No entrenado')}
               >
                 {d}
               </div>
@@ -118,22 +160,42 @@ export default function CalendarScreen({ onClose }) {
           </div>
         </div>
 
-        {/* Note panel */}
+        {/* Note / Selected Day panel */}
         {selectedDate && (
-          <div className="mt-4">
-            <div className="section-title">Nota del día {selectedDate}</div>
+          <div className="mt-4 p-4 bg-[var(--surface2)] border border-[var(--border-color)] rounded-2xl">
+            <div className="flex items-center justify-between mb-2">
+              <div>
+                <div className="font-bebas text-lg tracking-wider text-accent leading-none">
+                  {formatDate(selectedDate)}
+                </div>
+                <div className="text-[11px] text-[var(--muted)] mt-1">
+                  Estado: {td[selectedDate] ? '💪 Entrenado' : '⚪ No entrenado'}
+                </div>
+              </div>
+              <button
+                className={`text-xs px-3 py-1.5 rounded-lg font-semibold transition-all cursor-pointer ${
+                  td[selectedDate]
+                    ? 'bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30'
+                    : 'bg-accent text-black hover:opacity-90 shadow-[0_0_10px_rgba(200,255,0,0.3)]'
+                }`}
+                onClick={() => toggleDayTrained(selectedDate)}
+              >
+                {td[selectedDate] ? '✕ Desmarcar día' : '✓ Marcar como entrenado'}
+              </button>
+            </div>
+
             <textarea
-              className="input-field resize-y min-h-[80px] mt-2"
-              placeholder="¿Algo especial hoy? Lesión, logro, cómo te sentiste..."
+              className="input-field resize-y min-h-[70px] mt-2"
+              placeholder="¿Algo especial este día? Lesión, logro, cómo te sentiste..."
               value={noteText}
               onChange={e => setNoteText(e.target.value)}
             />
-            <div className="flex gap-2 mt-2 flex-wrap">
-              <button className="btn-outline py-1.5 px-3 text-sm" onClick={() => setSelectedDate(null)}>Cancelar</button>
+            <div className="flex gap-2 mt-3 flex-wrap items-center">
+              <button className="btn-outline py-1.5 px-3 text-xs" onClick={() => setSelectedDate(null)}>Cerrar</button>
               {td[selectedDate] && (
-                <button className="btn-danger py-1.5 px-3 text-sm" onClick={unmarkDay}>🗑 Anular día</button>
+                <button className="btn-danger py-1.5 px-3 text-xs" onClick={unmarkDay}>🗑 Anular día</button>
               )}
-              <button className="btn-accent py-1.5 px-3 text-sm" onClick={saveNote}>Guardar nota</button>
+              <button className="btn-accent py-1.5 px-4 text-xs ml-auto" onClick={saveNote}>Guardar nota</button>
             </div>
           </div>
         )}

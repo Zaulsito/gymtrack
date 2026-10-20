@@ -4,12 +4,13 @@ import { auth } from '../../lib/firebase'
 import { useApp } from '../../context/AppContext'
 import { THEMES } from '../../lib/utils'
 
-export default function Header({ onOpenProfile, onOpenCalendar, onOpenPartner, onOpenBody, onOpenStats, onOpenRoutines, onOpenNotifications, onOpenChangelog, onShare, onExportExcel, onImportExcel }) {
+export default function Header({ onOpenProfile, onOpenCalendar, onOpenPartner, onOpenBody, onOpenStats, onOpenRoutines, onOpenNotifications, onOpenChangelog, onShare, onExportExcel, onImportExcel, selectedGym, onChangeGym }) {
   const { state, currentUser, isDemoMode, exitDemoMode, theme, setTheme, showToast } = useApp()
   const [dropUser,  setDropUser]  = useState(false)
   const [dropTheme, setDropTheme] = useState(false)
 
   function doLogout() {
+    sessionStorage.removeItem('gymtrack_selected_gym')
     if (isDemoMode) { exitDemoMode(); return }
     signOut(auth)
   }
@@ -19,8 +20,21 @@ export default function Header({ onOpenProfile, onOpenCalendar, onOpenPartner, o
 
   return (
     <header className="bg-[var(--surface)] border-b border-[var(--border-color)] px-6 flex items-center justify-between h-[60px] sticky top-0 z-[350]">
-      <div className="font-bebas text-[1.8rem] tracking-widest text-accent">
-        GYM<span className="text-[var(--text)]">TRACK</span>
+      <div className="flex items-center gap-3">
+        <div className="font-bebas text-[1.8rem] tracking-widest text-accent leading-none">
+          GYM<span className="text-[var(--text)]">TRACK</span>
+        </div>
+        {selectedGym === 'smartfit' && (
+          <button
+            onClick={onChangeGym}
+            title="Cambiar sede o gimnasio"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--surface2)] border border-[#FFB800]/40 hover:border-[#FFB800] text-[11px] font-semibold text-[var(--text)] transition-all cursor-pointer"
+          >
+            <span className="w-2 h-2 rounded-full bg-[#FFB800]" />
+            <span>Smart Fit</span>
+            <span className="text-[var(--muted)] text-[10px]">⇄</span>
+          </button>
+        )}
       </div>
 
       <div className="flex gap-2 items-center">
@@ -93,6 +107,7 @@ export default function Header({ onOpenProfile, onOpenCalendar, onOpenPartner, o
                   { icon: '📤', label: 'Compartir progreso',action: onShare         },
                   { icon: '🤝', label: 'Partner',          action: onOpenPartner   },
                   { icon: '⚖️', label: 'Peso corporal',    action: onOpenBody      },
+                  { icon: '🟡', label: 'Cambiar Gimnasio', action: onChangeGym     },
                   { icon: '↓',  label: 'Exportar Excel',   action: onExportExcel   },
                   { icon: '↑',  label: 'Importar Excel',   action: onImportExcel   },
                 ].map(({ icon, label, action }) => (

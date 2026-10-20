@@ -255,6 +255,7 @@
 .cal-day:hover { border-color: var(--accent); }
 .cal-day.trained { background: var(--accent); color: #000; font-weight: 700; border-color: var(--accent); }
 .cal-day.today { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(200,255,0,0.2); }
+.cal-day.selected { outline: 2px solid #fff; outline-offset: -2px; box-shadow: 0 0 8px rgba(255,255,255,0.6); z-index: 2; }
 .cal-day.other-month { opacity: 0.3; }
 .cal-day.has-note::after {
   content: '·';

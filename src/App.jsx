@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react'
 import { auth } from './lib/firebase'
+import { signOut } from 'firebase/auth'
 import { useApp } from './context/AppContext'
 import { useAuth } from './hooks/useAuth'
 
 import AuthScreen            from './components/auth/AuthScreen'
+import GymSelectionScreen    from './components/gym/GymSelectionScreen'
 import VerifiedSuccess       from './components/auth/VerifiedSuccess'
 import ResetPasswordPanel    from './components/auth/ResetPasswordPanel'
 import Header                from './components/layout/Header'
@@ -31,6 +33,7 @@ export default function App() {
   useNotifications(state)
   const { authState, setAuthState, pendingUser, justVerified, setJustVerified } = useAuth()
 
+  const [selectedGym, setSelectedGym] = useState(() => sessionStorage.getItem('gymtrack_selected_gym') || null)
   const [screen, setScreen] = useState(() => sessionStorage.getItem('gymtrack_screen') || null)
   const [modal,         setModal]         = useState(null)
   const [welcomeName,   setWelcomeName]   = useState('')
@@ -57,6 +60,14 @@ export default function App() {
     const meta = document.querySelector('meta[name="theme-color"]')
     if (meta) meta.setAttribute('content', BG_COLORS[saved] || '#f0f2f5')
   }, [])
+
+  // Reset selected gym when user logs out or is unauthenticated
+  useEffect(() => {
+    if (authState === 'unauthenticated' && !isDemoMode) {
+      setSelectedGym(null)
+      sessionStorage.removeItem('gymtrack_selected_gym')
+    }
+  }, [authState, isDemoMode])
 
   function handleCompleteProfileDone(firstName) {
     setWelcomeName(firstName)
@@ -154,9 +165,35 @@ export default function App() {
     return <CompleteProfileScreen onDone={handleCompleteProfileDone} />
   }
 
+  // ── GYM SELECTION ────────────────────────────────────────────────────────────
+  if (!selectedGym) {
+    return (
+      <>
+        <GymSelectionScreen
+          onSelectGym={(gym) => {
+            setSelectedGym(gym)
+            sessionStorage.setItem('gymtrack_selected_gym', gym)
+          }}
+          onLogout={() => {
+            if (isDemoMode) exitDemoMode()
+            else signOut(auth)
+            setSelectedGym(null)
+            sessionStorage.removeItem('gymtrack_selected_gym')
+          }}
+        />
+        <Toast />
+      </>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-[var(--bg)]">
       <Header
+        selectedGym={selectedGym}
+        onChangeGym={() => {
+          setSelectedGym(null)
+          sessionStorage.removeItem('gymtrack_selected_gym')
+        }}
         onOpenProfile={() => navigateTo('profile')}
         onOpenCalendar={() => navigateTo('calendar')}
         onOpenPartner={() => navigateTo('partner')}
